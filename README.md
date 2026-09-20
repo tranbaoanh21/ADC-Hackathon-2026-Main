@@ -11,10 +11,14 @@ Repository hiện ở trạng thái **brief-ready**. Competition brief chưa đ�
 Mọi thành viên và coding agent phải đọc theo thứ tự:
 
 1. [`AGENTS.md`](AGENTS.md)
-2. [`docs/COMPETITION_BRIEF.md`](docs/COMPETITION_BRIEF.md)
-3. [`docs/SOLUTION_SCOPE.md`](docs/SOLUTION_SCOPE.md)
-4. Contract và example payload liên quan
-5. README trong phần code đang phụ trách
+2. [`docs/START_HERE.md`](docs/START_HERE.md)
+3. [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
+4. [`docs/COMPETITION_BRIEF.md`](docs/COMPETITION_BRIEF.md)
+5. [`docs/SOLUTION_SCOPE.md`](docs/SOLUTION_SCOPE.md)
+6. [`docs/HANDOFF.md`](docs/HANDOFF.md)
+7. Contract, example payload và README trong phần code đang phụ trách
+
+Prompt mẫu cho thread mới và teammate nằm tại [`docs/THREAD_STARTER_PROMPTS.md`](docs/THREAD_STARTER_PROMPTS.md).
 
 Không bắt đầu code feature trước khi team điền tối thiểu primary user, workplace context, barrier, golden path, non-goals và success metrics trong `docs/SOLUTION_SCOPE.md`.
 
@@ -53,6 +57,7 @@ contracts/
 evals/
   cases/            Fixed evaluation cases và kết quả đo
 docs/               Brief, scope, decisions và evidence
+  diagrams/          PlantUML source và SVG dùng trong deck
 demo-assets/        Asset được phép dùng cho demo/fallback
 ADC-main-submission-template/
                     Tài liệu và PowerPoint template chính thức
@@ -75,6 +80,8 @@ Không bắt buộc xây cả web và mobile. Sau khi đọc brief, chọn clien
 - [x] Team workflow và ownership đã được ghi trong `AGENTS.md`
 - [x] Official submission template và guides đã được lưu
 - [x] Repository skeleton đã sẵn sàng
+- [x] New-thread, teammate onboarding và handoff workflow đã được chuẩn hóa
+- [x] PlantUML source/rendering convention đã được định nghĩa
 - [ ] Competition brief đã được nhập
 - [ ] Solution scope đã được team chốt
 - [ ] API/AI contracts đã được tạo
@@ -88,4 +95,3 @@ Không bắt buộc xây cả web và mobile. Sau khi đọc brief, chọn clien
 - Gemini key chỉ nằm trong server-side AI service.
 - Database credential chỉ nằm trong application backend environment.
 - Nếu secret từng bị commit, phải revoke và rotate; xóa file ở commit mới không đủ bảo vệ secret cũ.
-

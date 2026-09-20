@@ -6,7 +6,26 @@ File này là quy tắc chung để các thành viên và coding agent phối h�
 
 Competition brief, end-user evidence và quyết định chung của team trong ngày thi luôn có mức ưu tiên cao hơn giả định chuẩn bị trước.
 
-### 1.1. Official source pack
+### 1.1. Repository là shared context
+
+Chat history không được đồng bộ qua Git và không phải source of truth của team. Mọi quyết định mà thành viên hoặc agent khác cần biết phải được ghi vào repository, commit và push.
+
+Phân chia source of truth:
+
+| Nội dung | File/thư mục |
+|---|---|
+| Quy tắc ổn định, ownership và quality gates | `AGENTS.md` |
+| Điểm bắt đầu cho người mới hoặc thread mới | `docs/START_HERE.md` |
+| Trạng thái dự án và việc đang làm | `docs/PROJECT_STATUS.md` |
+| Competition facts và end-user evidence | `docs/COMPETITION_BRIEF.md` |
+| Product decision, golden path và non-goals | `docs/SOLUTION_SCOPE.md` |
+| Request/response/error interface | `contracts/` |
+| Bàn giao giữa người, branch và agent | `docs/HANDOFF.md` |
+| Diagram source và rendering rules | `docs/diagrams/` |
+
+Không chép trạng thái tạm thời vào `AGENTS.md`. Không để shared decision chỉ tồn tại trong chat, terminal output hoặc local note.
+
+### 1.2. Official source pack
 
 Bộ tài liệu chính thức hiện được lưu tại:
 
@@ -29,7 +48,7 @@ Thứ tự ưu tiên khi có khác biệt:
 
 Không chỉnh sửa hoặc ghi đè các file gốc trong `ADC-main-submission-template/`. Deck owner phải tạo working copy từ `Submission Template.pptx`, sau đó đặt tên output theo quy tắc chính thức. Nếu BTC gửi version mới, lưu version mới riêng, so sánh yêu cầu và cập nhật `AGENTS.md` trước khi tiếp tục làm deck.
 
-### 1.2. Official event checkpoints
+### 1.3. Official event checkpoints
 
 - Day 1, 09:00–10:00: Opening và Competition Brief release.
 - Day 1, 13:00: BTC gửi Mock Pitch registration; form đóng lúc 15:00, giới hạn 20 slots theo first come, first served.
@@ -43,13 +62,17 @@ Không chỉnh sửa hoặc ghi đè các file gốc trong `ADC-main-submission-
 
 Không thay đổi focus area hoặc team membership sau khi BTC đã xác nhận. Thành viên phải tuân thủ attendance và identity requirements của BTC. Các mốc trên phải được dùng để quyết định feature freeze, deployment, video recording và thời điểm upload; không chờ sát 07:00 Day 3 mới nộp.
 
-Trước khi thực hiện task, mọi thành viên hoặc agent phải đọc:
+Trước khi thực hiện task, mọi thành viên hoặc agent phải đọc theo thứ tự:
 
 1. `AGENTS.md`.
-2. Competition brief mới nhất.
-3. `README.md` của solution repository.
-4. API contracts và example payload liên quan.
-5. Git status và thay đổi hiện có trong phạm vi task.
+2. `docs/START_HERE.md`.
+3. `docs/PROJECT_STATUS.md`.
+4. `docs/COMPETITION_BRIEF.md` và `docs/SOLUTION_SCOPE.md`.
+5. `docs/HANDOFF.md`.
+6. API contracts, example payload và README trong phạm vi task.
+7. Git status, branch hiện tại và thay đổi chưa commit.
+
+Trong turn đầu của thread mới, agent phải tóm tắt ngắn gọn những gì đã hiểu, chỉ ra file còn `TBD` liên quan đến task và xác nhận phạm vi trước khi thay đổi lớn. Không được dùng kiến thức từ một chat khác để ghi đè repository hiện tại.
 
 ## 2. Nguyên tắc ưu tiên
 
@@ -847,6 +870,7 @@ Trước submission, kiểm tra:
 Coding agent phải:
 
 - đọc brief, `AGENTS.md`, README, contracts và file liên quan trước khi sửa
+- đọc `docs/PROJECT_STATUS.md` và `docs/HANDOFF.md` để tránh làm lại hoặc xung đột task đang hoạt động
 - kiểm tra Git state và không ghi đè thay đổi không thuộc task
 - nêu assumption khi brief hoặc contract chưa đủ rõ
 - giữ thay đổi nhỏ, đúng scope và dễ review
@@ -856,4 +880,5 @@ Coding agent phải:
 - không thực hiện commit, push, deploy hoặc external action nếu chưa được yêu cầu
 - chạy verification tương xứng với rủi ro thay đổi
 - báo trung thực test chưa chạy, limitation và blocker
+- cập nhật project status/handoff khi thay đổi làm ảnh hưởng người hoặc branch khác
 - ưu tiên golden path, accessibility và reliability hơn độ phức tạp kỹ thuật
