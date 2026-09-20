@@ -1,0 +1,38 @@
+.DS_Store
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# JavaScript / TypeScript
+**/node_modules/
+**/dist/
+**/coverage/
+**/*.tsbuildinfo
+**/.vite/
+**/.expo/
+
+# Python
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.pyc
+
+# Database and local uploads
+**/prisma/dev.db*
+**/uploads/
+**/tmp/
+
+# IDE / OS
+.idea/
+*.swp
+
+# Generated submission exports
+submission-output/
+
