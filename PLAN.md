@@ -352,7 +352,7 @@ Verification on 2026-09-22:
 - App speech stops before each message and delegates announcements to the active screen reader instead of speaking over it.
 - Physical-device camera, both complete demo journeys and VoiceOver/TalkBack remain required before this phase can be marked complete.
 
-### Phase 6 — Live FastAPI integration
+### Phase 6 — Live FastAPI integration — `ADAPTER IMPLEMENTED; LIVE SMOKE BLOCKED BY FASTAPI HANDOFF`
 
 Dependencies from Hồng Phúc:
 
@@ -364,17 +364,25 @@ Dependencies from Hồng Phúc:
 
 Bảo Anh deliverables:
 
-- [ ] Live adapter implementing the same interface as mock adapter
-- [ ] `AI_SERVICE_URL`, internal token and timeout configuration
-- [ ] Multipart forwarding with maximum frame count/size
-- [ ] AI response runtime validation
-- [ ] Error mapping for 401/413/422/503/504 and invalid schema
-- [ ] Mock/live mode is explicit in logs/demo UI; fallback is never presented as live inference
+- [x] Live adapter implementing the same interface as mock adapter
+- [x] `AI_SERVICE_URL`, internal token and timeout configuration
+- [x] Multipart forwarding with maximum frame count/size
+- [x] AI response runtime validation
+- [x] Error mapping for 401/413/422/503/504 and invalid schema
+- [x] Mock/live mode is explicit in startup logs; fallback is never presented as live inference
 
 Gate:
 
 - One live observation passes Express → FastAPI → provider → Express schema validation.
 - Provider failure returns stable accessible product behavior without graph/session corruption.
+
+Verification on 2026-09-22:
+
+- HTTP adapter and runtime-mode tests cover multipart metadata/frame forwarding, bearer authorization, required live configuration, local timeout, invalid JSON and 401/413/422/503/504 mapping.
+- Express still validates every successful AI response against `aiPerceptionSchema` before product state can advance or evidence can be saved.
+- Express upload and adapter defense-in-depth both enforce one to three JPEG/PNG frames and a three-megabyte per-frame limit.
+- `AI_ADAPTER=mock` remains the explicit default for development; `AI_ADAPTER=live` fails fast when URL/token/timeout configuration is invalid.
+- No live claim has been made: FastAPI repository, deployed URL, internal token and model/provider evidence are still required from Hồng Phúc for the end-to-end gate.
 
 ### Phase 7 — Brand, accessibility and safety polish
 

@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-22
 
-Current phase: `LIVE_AI_ADAPTER_NEXT; UI_DEVICE_QA_PENDING`
+Current phase: `ACCESSIBILITY_AND_DEPLOYMENT_NEXT; LIVE_AI_SMOKE_BLOCKED`
 
 ## Confirmed facts
 
@@ -34,7 +34,7 @@ Current phase: `LIVE_AI_ADAPTER_NEXT; UI_DEVICE_QA_PENDING`
 - Product API `2.0.0`: breaking change from the linear v1 route model to a bounded directed landmark graph with reachable destinations and navigation session path planning.
 - AI service `1.1.0`: unchanged perception boundary; no graph, database or routing responsibility.
 - Canonical contracts and examples are in `contracts/`.
-- Express Product API v2 now runs against deterministic in-memory repositories and a contract-shaped AI mock. FastAPI live implementation remains pending.
+- Express Product API v2 runs against deterministic in-memory/Prisma repositories and supports explicit mock/live AI adapters. FastAPI live implementation and the real integration smoke remain pending.
 
 ## Repository and ownership boundary
 
@@ -47,13 +47,13 @@ Current phase: `LIVE_AI_ADAPTER_NEXT; UI_DEVICE_QA_PENDING`
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phases 0–3 complete; admin web and Expo mobile implemented with device/screen-reader QA pending; live FastAPI adapter next | No contract change | FastAPI URL/token needed only for live smoke |
+| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phases 0–3 complete; web/mobile and Express live adapter implemented; device/screen-reader, deployment and live AI smoke pending | No contract change | FastAPI URL/token needed for live smoke; deployment accounts/phone needed for later gates |
 | Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval | Not started | Must remain AI service 1.1-compatible | Needs latest handoff branch/commit |
 
 ## Next implementation gate
 
 1. Both owners pull the handoff commit and read `docs/TECHNICAL_FLOW.md`.
-2. Bảo Anh implements the contract-compatible live FastAPI adapter, then completes web/mobile device and screen-reader QA.
+2. Bảo Anh completes web/mobile device and screen-reader QA and prepares deployment configuration.
 3. Hồng Phúc implements FastAPI from AI-service v1.1 using the checked-in AI examples.
 4. Each repository adds runtime validators matching its owned contract.
 5. Integrate one live perception response as soon as it validates.
@@ -66,7 +66,7 @@ Current phase: `LIVE_AI_ADAPTER_NEXT; UI_DEVICE_QA_PENDING`
 |---|---|---|---|---|
 | Mobile | Bảo Anh | Learn/Navigate camera flow implemented; typecheck, four unit tests and Android production bundle pass; device/VoiceOver/TalkBack QA pending | Not deployed | TBD |
 | Web review console | Bảo Anh | Review/edit edges/publish/outdated UI implemented; Edge AX-tree smoke and build pass; actual screen-reader QA pending | Not deployed | TBD |
-| Express API | Bảo Anh | Product API v2 with graph/BFS/session policy, in-memory/Prisma persistence and deterministic AI mock; 32 tests pass | Not deployed | TBD |
+| Express API | Bảo Anh | Product API v2 with graph/BFS/session policy, in-memory/Prisma persistence, deterministic mock and contract-compatible live FastAPI adapter; 42 tests pass, 3 database tests conditionally skipped without test DB | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Prisma schema/migration/seed and repository verified on isolated PostgreSQL; 32 total tests pass | Not provisioned | Secret; never record connection string here |
 | FastAPI AI service | Hồng Phúc | Not implemented | Not deployed | Repository and URL TBD |
 | Hosted vision model | Hồng Phúc | Not integrated | Not verified | Model ID TBD; never record API key here |
