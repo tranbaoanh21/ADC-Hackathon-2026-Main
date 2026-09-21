@@ -1,0 +1,25 @@
+{
+  "id": "46fe5f2d-65c3-4322-b2a9-5cf46139975f",
+  "routeId": "7fbd42a3-356f-4ad7-b3f5-68b79a1154b7",
+  "mode": "NAVIGATE",
+  "status": "AWAITING_START_CONFIRMATION",
+  "currentPathIndex": 0,
+  "originLandmarkId": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+  "destinationLandmarkId": "ffb52187-b769-4a0f-96b3-456292839602",
+  "expectedLandmarkId": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+  "plannedPath": {
+    "originLandmarkId": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+    "destinationLandmarkId": "ffb52187-b769-4a0f-96b3-456292839602",
+    "landmarkIds": [
+      "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+      "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
+      "ffb52187-b769-4a0f-96b3-456292839602"
+    ],
+    "edgeIds": [
+      "18679377-b5fd-482f-83e5-7f6d16833296",
+      "65a345da-0928-47a2-98f5-ae6560313a3d"
+    ]
+  },
+  "startedAt": "2026-09-22T08:00:00+07:00",
+  "finishedAt": null
+}

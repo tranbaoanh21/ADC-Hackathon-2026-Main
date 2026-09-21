@@ -1,0 +1,29 @@
+{
+  "routeId": "7fbd42a3-356f-4ad7-b3f5-68b79a1154b7",
+  "origin": {
+    "id": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+    "name": "Reception",
+    "displayOrder": 0,
+    "type": "RECEPTION"
+  },
+  "destinations": [
+    {
+      "id": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
+      "name": "Elevator Level 2",
+      "displayOrder": 1,
+      "type": "ELEVATOR_AREA"
+    },
+    {
+      "id": "ffb52187-b769-4a0f-96b3-456292839602",
+      "name": "Meeting Room A",
+      "displayOrder": 2,
+      "type": "MEETING_ROOM"
+    },
+    {
+      "id": "8c66e120-5a64-4c39-9a43-477effcc1d28",
+      "name": "Restroom Level 2",
+      "displayOrder": 3,
+      "type": "RESTROOM"
+    }
+  ]
+}

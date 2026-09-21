@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PathMemory Product API
-  version: 1.1.0
+  version: 2.0.0
   description: >-
     Public API owned by the Express application backend. Mobile and web call
     this API only. AI perception is internal and never exposed directly to a
@@ -14,10 +14,10 @@ tags:
   - name: Sessions
   - name: Review
 paths:
-  /api/v1/routes:
+  /api/v2/routes:
     post:
       tags: [Routes]
-      summary: Create one draft onboarding route
+      summary: Create one draft workplace landmark graph
       operationId: createRoute
       requestBody:
         required: true
@@ -34,12 +34,12 @@ paths:
                 $ref: '#/components/schemas/Route'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/routes/{routeId}:
+  /api/v2/routes/{routeId}:
     parameters:
       - $ref: '#/components/parameters/RouteId'
     get:
       tags: [Routes]
-      summary: Get a route and its ordered landmarks
+      summary: Get a published or draft landmark graph
       operationId: getRoute
       responses:
         '200':
@@ -50,12 +50,12 @@ paths:
                 $ref: '#/components/schemas/Route'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/v1/routes/{routeId}/sessions:
+  /api/v2/routes/{routeId}/sessions:
     parameters:
       - $ref: '#/components/parameters/RouteId'
     post:
       tags: [Sessions]
-      summary: Start a learn or navigate session
+      summary: Start a learn session or plan a navigation session
       operationId: startRouteSession
       requestBody:
         required: true
@@ -63,6 +63,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StartSessionRequest'
+            examples:
+              navigate:
+                externalValue: ./examples/product-navigation-session-request.json
       responses:
         '201':
           description: Session started
@@ -70,15 +73,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RouteSession'
+              examples:
+                navigationAwaitingStart:
+                  externalValue: ./examples/product-navigation-session-success.json
         '409':
-          description: Route state does not allow the requested mode
+          description: Graph/session state is invalid, origin equals destination or no directed path exists
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/sessions/{sessionId}/observations:
+  /api/v2/routes/{routeId}/reachable-destinations:
+    parameters:
+      - $ref: '#/components/parameters/RouteId'
+      - name: originLandmarkId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Routes]
+      summary: List published landmarks reachable from a selected origin
+      operationId: listReachableDestinations
+      responses:
+        '200':
+          description: Screen-reader-friendly destination options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReachableDestinationsResponse'
+              examples:
+                success:
+                  externalValue: ./examples/product-reachable-destinations.json
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Route graph is not published or origin is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v2/sessions/{sessionId}/observations:
     parameters:
       - $ref: '#/components/parameters/SessionId'
     post:
@@ -128,8 +165,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ObservationProductResponse'
               examples:
-                success:
+                learnCandidate:
                   externalValue: ./examples/product-observation-success.json
+                navigationStartConfirmed:
+                  externalValue: ./examples/product-navigation-start-confirmed.json
+                navigationStartNotConfirmed:
+                  externalValue: ./examples/product-navigation-start-not-confirmed.json
         '413':
           description: Frame count or payload exceeds configured limits
           content:
@@ -142,7 +183,7 @@ paths:
           $ref: '#/components/responses/AiUnavailable'
         '504':
           $ref: '#/components/responses/AiTimeout'
-  /api/v1/sessions/{sessionId}/landmarks:
+  /api/v2/sessions/{sessionId}/landmarks:
     parameters:
       - $ref: '#/components/parameters/SessionId'
     post:
@@ -170,7 +211,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/sessions/{sessionId}/finish:
+  /api/v2/sessions/{sessionId}/finish:
     parameters:
       - $ref: '#/components/parameters/SessionId'
     post:
@@ -190,7 +231,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/v1/routes/{routeId}/landmarks/{landmarkId}:
+  /api/v2/routes/{routeId}/landmarks/{landmarkId}:
     parameters:
       - $ref: '#/components/parameters/RouteId'
       - $ref: '#/components/parameters/LandmarkId'
@@ -215,17 +256,17 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/routes/{routeId}/edges:
+  /api/v2/routes/{routeId}/edges:
     parameters:
       - $ref: '#/components/parameters/RouteId'
     put:
       tags: [Review]
-      summary: Replace the ordered relative directions between route landmarks
+      summary: Replace human-reviewed directed relations between landmarks
       description: >-
         Used by the admin/buddy review UI. Direction belongs to the directed
         edge between two landmarks, not to either landmark itself. Express
-        rejects self-loops, duplicate sequence indexes and references to
-        landmarks outside the route.
+        rejects self-loops, duplicate directed edges and references to
+        landmarks outside the graph. Branching and reverse edges are allowed.
       operationId: replaceRouteEdges
       requestBody:
         required: true
@@ -234,7 +275,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ReplaceRouteEdgesRequest'
             examples:
-              threeLandmarkDemo:
+              boundedGraphDemo:
                 externalValue: ./examples/product-route-edges-request.json
       responses:
         '200':
@@ -244,19 +285,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/Route'
         '409':
-          description: Edge set does not form one continuous directed route
+          description: Edge set contains invalid references, self-loops or duplicate directed edges
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/routes/{routeId}/publish:
+  /api/v2/routes/{routeId}/publish:
     parameters:
       - $ref: '#/components/parameters/RouteId'
     post:
       tags: [Review]
-      summary: Publish a fully human-verified route
+      summary: Publish a fully human-verified landmark graph
       operationId: publishRoute
       responses:
         '200':
@@ -266,12 +307,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Route'
         '409':
-          description: Route has fewer than two landmarks, unverified landmarks or invalid topology
+          description: Graph has fewer than two landmarks, unverified landmarks or invalid topology
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/v1/routes/{routeId}/mark-outdated:
+  /api/v2/routes/{routeId}/mark-outdated:
     parameters:
       - $ref: '#/components/parameters/RouteId'
     post:
@@ -343,17 +384,9 @@ components:
     CreateRouteRequest:
       type: object
       additionalProperties: false
-      required: [name, originLabel, destinationLabel]
+      required: [name]
       properties:
         name:
-          type: string
-          minLength: 1
-          maxLength: 100
-        originLabel:
-          type: string
-          minLength: 1
-          maxLength: 100
-        destinationLabel:
           type: string
           minLength: 1
           maxLength: 100
@@ -362,13 +395,38 @@ components:
           default: vi-VN
           maxLength: 20
     StartSessionRequest:
+      oneOf:
+        - $ref: '#/components/schemas/StartLearnSessionRequest'
+        - $ref: '#/components/schemas/StartNavigateSessionRequest'
+      discriminator:
+        propertyName: mode
+    StartLearnSessionRequest:
       type: object
       additionalProperties: false
       required: [mode]
       properties:
         mode:
           type: string
-          enum: [LEARN, NAVIGATE]
+          const: LEARN
+    StartNavigateSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [mode, originLandmarkId, destinationLandmarkId]
+      properties:
+        mode:
+          type: string
+          const: NAVIGATE
+        originLandmarkId:
+          type: string
+          format: uuid
+        destinationLandmarkId:
+          type: string
+          format: uuid
+        pathStrategy:
+          type: string
+          enum: [FEWEST_EDGES]
+          default: FEWEST_EDGES
+          description: Deterministic unweighted graph search; AI never selects the path.
     SaveLandmarkDraftRequest:
       type: object
       additionalProperties: false
@@ -391,7 +449,7 @@ components:
     ReviewLandmarkRequest:
       type: object
       additionalProperties: false
-      required: [name, sequenceIndex, reviewStatus]
+      required: [name, displayOrder, reviewStatus]
       properties:
         name:
           type: string
@@ -402,14 +460,10 @@ components:
           maxLength: 300
         type:
           $ref: '#/components/schemas/LandmarkType'
-        spokenCue:
-          type: string
-          maxLength: 300
-          deprecated: true
-          description: Deprecated compatibility field; direction narration belongs to RouteEdge.spokenCue.
-        sequenceIndex:
+        displayOrder:
           type: integer
           minimum: 0
+          description: Stable admin-list ordering only; it is not a path position or spatial coordinate.
         reviewStatus:
           type: string
           enum: [AI_DRAFT, BUDDY_VERIFIED]
@@ -449,7 +503,7 @@ components:
           enum: [LEARN, NAVIGATE]
         routeState:
           type: string
-          enum: [OBSERVING, SEEKING_LANDMARK, STOP_AND_RESCAN, ROUTE_COMPLETED]
+          enum: [OBSERVING, AWAITING_START_CONFIRMATION, SEEKING_LANDMARK, STOP_AND_RESCAN, ROUTE_COMPLETED]
         landmarkMatchStatus:
           type: string
           enum: [NOT_APPLICABLE, CANDIDATE, MATCHED, NOT_MATCHED, INSUFFICIENT_EVIDENCE]
@@ -499,29 +553,26 @@ components:
     LandmarkSummary:
       type: object
       additionalProperties: false
-      required: [id, sequenceIndex, name]
+      required: [id, name, displayOrder]
       properties:
         id:
           type: string
           format: uuid
-        sequenceIndex:
+        displayOrder:
           type: integer
           minimum: 0
+          description: Stable admin-list ordering only; it is not a path position or spatial coordinate.
         name:
           type: string
         type:
           $ref: '#/components/schemas/LandmarkType'
-        spokenCue:
-          type: string
-          deprecated: true
-          description: Deprecated compatibility field; use the outgoing RouteEdge spoken cue.
     Landmark:
       type: object
       additionalProperties: false
       required:
         - id
-        - sequenceIndex
         - name
+        - displayOrder
         - description
         - visibleText
         - stableFeatures
@@ -530,17 +581,14 @@ components:
         id:
           type: string
           format: uuid
-        sequenceIndex:
+        displayOrder:
           type: integer
           minimum: 0
+          description: Stable admin-list ordering only; it is not a path position or spatial coordinate.
         name:
           type: string
         type:
           $ref: '#/components/schemas/LandmarkType'
-        spokenCue:
-          type: string
-          deprecated: true
-          description: Deprecated compatibility field; use RouteEdge.spokenCue.
         description:
           type: string
         visibleText:
@@ -557,16 +605,15 @@ components:
     Route:
       type: object
       additionalProperties: false
-      required: [id, name, originLabel, destinationLabel, status, landmarks, createdAt]
+      description: >-
+        A bounded workplace landmark graph. A concrete origin-to-destination
+        path is computed when a NAVIGATE session starts.
+      required: [id, name, status, landmarks, edges, createdAt]
       properties:
         id:
           type: string
           format: uuid
         name:
-          type: string
-        originLabel:
-          type: string
-        destinationLabel:
           type: string
         status:
           type: string
@@ -580,9 +627,8 @@ components:
           type: array
           minItems: 0
           description: >-
-            Directed relative instructions. Draft routes may omit edges;
-            publish policy requires exactly N-1 continuous edges for N ordered
-            landmarks.
+            Directed human-reviewed relative instructions. Draft graphs may
+            omit edges; published graphs may branch and include reverse edges.
           items:
             $ref: '#/components/schemas/RouteEdge'
         createdAt:
@@ -596,7 +642,7 @@ components:
     RouteSession:
       type: object
       additionalProperties: false
-      required: [id, routeId, mode, status, currentSequence, startedAt]
+      required: [id, routeId, mode, status, startedAt]
       properties:
         id:
           type: string
@@ -609,10 +655,30 @@ components:
           enum: [LEARN, NAVIGATE]
         status:
           type: string
-          enum: [ACTIVE, COMPLETED, CANCELLED]
-        currentSequence:
+          enum: [ACTIVE, AWAITING_START_CONFIRMATION, COMPLETED, CANCELLED]
+        currentPathIndex:
           type: integer
           minimum: 0
+          description: Index in plannedPath.landmarkIds; zero is the selected origin awaiting confirmation.
+        originLandmarkId:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+        destinationLandmarkId:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+        expectedLandmarkId:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+        plannedPath:
+          oneOf:
+            - $ref: '#/components/schemas/NavigationPath'
+            - type: 'null'
         startedAt:
           type: string
           format: date-time
@@ -639,6 +705,7 @@ components:
                 - INVALID_STATE
                 - DUPLICATE_LANDMARK
                 - INVALID_ROUTE_TOPOLOGY
+                - NO_ROUTE_AVAILABLE
                 - AI_INVALID_RESPONSE
                 - AI_PROVIDER_UNAVAILABLE
                 - AI_TIMEOUT
@@ -673,11 +740,12 @@ components:
     RouteEdgeInput:
       type: object
       additionalProperties: false
-      required: [sequenceIndex, fromLandmarkId, toLandmarkId, maneuver, spokenCue]
+      required: [displayOrder, fromLandmarkId, toLandmarkId, maneuver, spokenCue]
       properties:
-        sequenceIndex:
+        displayOrder:
           type: integer
           minimum: 0
+          description: Stable admin-list ordering only; it does not determine pathfinding.
         fromLandmarkId:
           type: string
           format: uuid
@@ -693,14 +761,15 @@ components:
     RouteEdge:
       type: object
       additionalProperties: false
-      required: [id, sequenceIndex, fromLandmarkId, toLandmarkId, maneuver, spokenCue]
+      required: [id, displayOrder, fromLandmarkId, toLandmarkId, maneuver, spokenCue]
       properties:
         id:
           type: string
           format: uuid
-        sequenceIndex:
+        displayOrder:
           type: integer
           minimum: 0
+          description: Stable admin-list ordering only; it does not determine pathfinding.
         fromLandmarkId:
           type: string
           format: uuid
@@ -719,6 +788,47 @@ components:
       description: >-
         Human-reviewed relative instruction after recognising the source
         landmark. It is not an exact angle, distance or safety assertion.
+    NavigationPath:
+      type: object
+      additionalProperties: false
+      description: >-
+        Deterministic path computed by Express over published directed edges.
+        landmarkIds and edgeIds are ordered and edgeIds[n] connects
+        landmarkIds[n] to landmarkIds[n+1].
+      required: [originLandmarkId, destinationLandmarkId, landmarkIds, edgeIds]
+      properties:
+        originLandmarkId:
+          type: string
+          format: uuid
+        destinationLandmarkId:
+          type: string
+          format: uuid
+        landmarkIds:
+          type: array
+          minItems: 2
+          items:
+            type: string
+            format: uuid
+        edgeIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+    ReachableDestinationsResponse:
+      type: object
+      additionalProperties: false
+      required: [routeId, origin, destinations]
+      properties:
+        routeId:
+          type: string
+          format: uuid
+        origin:
+          $ref: '#/components/schemas/LandmarkSummary'
+        destinations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LandmarkSummary'
     LandmarkType:
       type: string
       enum:

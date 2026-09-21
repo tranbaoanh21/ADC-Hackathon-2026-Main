@@ -1,0 +1,17 @@
+{
+  "requestId": "mobile-nav-002",
+  "observationId": "d2af7a2b-1257-443b-9686-f5b96dfa9af5",
+  "sessionMode": "NAVIGATE",
+  "routeState": "AWAITING_START_CONFIRMATION",
+  "landmarkMatchStatus": "NOT_MATCHED",
+  "candidateLandmark": null,
+  "expectedLandmark": {
+    "id": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+    "name": "Reception",
+    "displayOrder": 0,
+    "type": "RECEPTION"
+  },
+  "spokenMessage": "Chưa xác nhận được Reception. Hãy đứng yên, hướng camera về biển Reception và quét lại.",
+  "shouldAdvance": false,
+  "retryAllowed": true
+}

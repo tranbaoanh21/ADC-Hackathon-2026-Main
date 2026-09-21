@@ -1,6 +1,6 @@
 # Competition Brief
 
-Status: `RECEIVED — CONTEXT CLASSIFIED, SOLUTION NOT SELECTED`
+Status: `RECEIVED — CONTEXT CLASSIFIED; TEAM SOLUTION RECORDED SEPARATELY`
 
 Ngày cập nhật: `2026-09-21`
 
@@ -41,8 +41,8 @@ The pasted brief is the source for barrier-specific context. The briefing deck a
 
 ### Product assumptions and decisions
 
-- No stage, primary user, workplace moment, barrier, client, AI task, architecture or product name has been selected.
-- No previous idea or generic visual-impairment use case is accepted as the competition solution.
+- The team has now selected a Stage 4 physical-orientation MVP. This is a team decision, not an official competition fact.
+- Current primary user, golden path, assumptions and non-goals are maintained only in `docs/SOLUTION_SCOPE.md`; they must not be rewritten here as brief evidence.
 
 ## Career-stage map from the brief
 

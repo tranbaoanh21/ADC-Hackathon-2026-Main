@@ -1,12 +1,12 @@
 # PathMemory Technical Flow
 
-Status: `PLANNED — CONTRACT V1`
+Status: `PLANNED — PRODUCT API V2 / AI SERVICE V1.1`
 
-This document explains how the Stage 4 unique-landmark MVP is split across clients, application backend, database and AI service. It does not claim that the runtime has been implemented.
+This document defines the implementation boundary for the confirmed Stage 4 landmark-graph MVP. It does not claim that runtime code exists yet.
 
 ## One-sentence architecture
 
-Mobile and web call Express; Express owns product state and PostgreSQL; Express sends ephemeral frames to Hồng Phúc's FastAPI service; FastAPI returns perception JSON; Express deterministically decides what is stored, announced or advanced.
+Mobile and web call Express; Express owns product state, graph routing and PostgreSQL; Express sends ephemeral frame batches to Hồng Phúc's FastAPI service; FastAPI returns perception JSON only.
 
 ```text
 Expo mobile ─┐
@@ -18,155 +18,178 @@ React web ───┘                    │
 Forbidden shortcuts:
 
 ```text
-Mobile/Web ─X→ FastAPI or model provider
-Mobile/Web ─X→ PostgreSQL
-FastAPI    ─X→ application PostgreSQL
-Model      ─X→ route advance, publish or safety decision
+Mobile/Web ─X→ FastAPI, model provider or PostgreSQL
+FastAPI    ─X→ application PostgreSQL or Product API state
+Model      ─X→ graph path, route advance, publish or safety decision
 ```
 
 ## Responsibility by layer
 
 ### Expo mobile — Bảo Anh
 
-- Camera preview and frame sampling.
-- Accessible Learn/Navigate controls, voice/shortcut activation, TTS and optional haptics.
-- One-to-three-frame rolling capture for an observation request.
+- Camera preview and one-to-three-frame observation sampling.
+- Accessible Learn/Navigate controls, origin/destination pickers, TTS and optional haptics.
 - Client request IDs and stale-response suppression.
-- Display/announce only the Product API response from Express.
-- Never store provider credentials or call FastAPI/model directly.
+- Announce only Product API decisions returned by Express.
+- Keep cane/guide dog/O&M use explicit; never present the app as obstacle avoidance.
 
 ### React web — Bảo Anh
 
-- List one route and its landmark drafts.
-- Edit landmark name, type and description.
-- Verify/delete/reorder a draft.
-- Connect landmarks with accessible dropdowns for relative maneuvers and edit the spoken cue for each directed edge.
-- Validate and publish the complete route.
-- Mark a published route outdated.
-- Keyboard and screen-reader accessible controls/status.
+- List stored `AI_DRAFT`, `BUDDY_VERIFIED`, `PUBLISHED` and `OUTDATED` landmarks.
+- Edit name, type, description and stable admin `displayOrder`.
+- Verify or reject drafts.
+- Create each directed edge with accessible from-landmark, to-landmark and maneuver dropdowns plus editable spoken cue.
+- Show graph validation errors, publish the verified graph and mark it outdated.
+- Support keyboard and screen-reader use with named controls and announced status.
 
 ### Express — Bảo Anh
 
-- Only public API for mobile/web.
-- Route, session and landmark lifecycle.
-- Runtime validation and stable error envelope.
-- Call FastAPI through an adapter that supports live and deterministic mock modes.
-- Normalise visible text and prevent simple duplicates within a route.
-- Deterministic route state machine and ordered checkpoint progression.
-- PostgreSQL persistence and transaction boundaries.
-- Timeout, stale response, retry mapping and `STOP_AND_RESCAN` behavior.
-- No raw media persistence or sensitive payload logging.
+- Only public API for mobile/web; implement `contracts/product-api.openapi.yaml` v2.0.0.
+- Validate requests/responses and return the stable error envelope.
+- Store accepted candidate landmarks as `AI_DRAFT`; AI never writes the database.
+- Own deduplication, human-review transitions and graph publication.
+- Validate directed edges, list reachable destinations and compute deterministic BFS paths.
+- Start `NAVIGATE` in `AWAITING_START_CONFIRMATION`, then own expected-landmark matching and `currentPathIndex`.
+- Call FastAPI through interchangeable live and deterministic mock adapters.
+- Map timeout/provider/schema failures without changing session progress.
+- Never persist raw frame bytes or log private provider payloads.
 
 ### PostgreSQL/Prisma — Bảo Anh
 
 Minimum planned entities:
 
-- `Route`: name, origin/destination label, status and published timestamp.
-- `Landmark`: stable place identity, name, visible text, stable features and review status.
-- `RouteLandmark`: route ID, landmark ID and sequence index; this lets a landmark be reused in later routes.
-- `RouteEdge`: route ID, sequence index, source/destination landmark IDs, relative maneuver and spoken cue.
-- `RouteSession`: route ID, mode (`LEARN`/`NAVIGATE`), current sequence and lifecycle status.
-- `Observation`: structured perception summary, request ID, quality, model/prompt version and latency; no raw frame.
-- `LandmarkReview`: edits, reviewer role, review status and timestamp.
+- `Route`: legacy Product API name for one bounded workplace graph; name, status, timestamps.
+- `Landmark`: stable place identity, name, type, visible text, stable features and review status.
+- `RouteLandmark`: graph membership and `displayOrder`; display order is not a coordinate/path position.
+- `RouteEdge`: graph ID, source/destination landmark IDs, relative maneuver, spoken cue and admin `displayOrder`.
+- `RouteSession`: mode, status, selected origin/destination, planned path and current path index.
+- `Observation`: structured summary, request ID, quality, model/prompt version and latency; no raw frame.
+- `LandmarkReview`: edits, reviewer role, state transition and timestamp.
 
-For the single linear demo, ordered `RouteEdge` records are sufficient; no graph algorithm is required. Database/API design must not hard-code three landmarks even though the judged demo uses exactly three.
+Recommended deterministic database constraints:
+
+- unique graph membership per `(routeId, landmarkId)`;
+- unique directed pair per `(routeId, fromLandmarkId, toLandmarkId)`;
+- no self-loop at application validation and database check where supported;
+- both edge endpoints must belong to the same graph;
+- published graphs contain at least two verified landmarks and at least one valid edge.
 
 ### FastAPI — Hồng Phúc
 
-- Implement `contracts/ai-service.openapi.yaml`.
+- Implement `contracts/ai-service.openapi.yaml` v1.1.0, especially `POST /internal/v1/perception`.
 - Accept one to three ephemeral images from Express.
-- Frame validation, resize/compression and optional blur/darkness checks.
-- OCR/VLM provider adapter, structured prompt and Pydantic validation.
-- Return independent perception: frame quality, detected text, scene type, candidates, stable features and uncertainty reasons.
-- Report model ID, prompt version and service latency for evaluation.
-- Delete/release frame bytes after the request and avoid private payload logs.
-- Own AI-service health, tests, eval and deployment.
+- Validate/resize/compress input and optionally detect blur/darkness.
+- Call the selected OCR/VLM provider and parse into the shared Pydantic schema.
+- Return frame quality, detected text, scene type, landmark candidates, stable features, uncertainty, model ID, prompt version and latency.
+- Release frame bytes after the request and avoid private payload logs.
+- Own AI-service health, provider tests, eval and deployment.
 
-FastAPI must not return `turnLeft`, `safeToProceed`, `advanceCheckpoint`, `publish` or another final product action.
+FastAPI does not receive the graph, query PostgreSQL, compute a path or return `turnLeft`, `safeToProceed`, `advanceCheckpoint` or `publish`.
 
 ## Day 1 learn flow
 
 ```text
-1. Mobile creates a draft route through Express.
+1. Mobile creates a draft workplace graph through Express.
 2. Mobile starts a LEARN session.
-3. Camera sends an observation request with sampled frame bytes.
-4. Express assigns request/session context and calls FastAPI.
-5. FastAPI returns validated perception JSON.
-6. Express returns an accessible narration and a candidate landmark.
-7. Employee/buddy explicitly saves a useful unique candidate.
-8. Express normalises text, rejects/merges simple duplicates and stores AI_DRAFT.
-9. Steps 3–8 repeat until the selected route landmarks are captured; the controlled demo stops at three.
-10. Web admin/buddy edits and verifies every landmark.
-11. Admin/buddy selects a relative maneuver and spoken cue for each directed edge.
-12. Express publishes only when all landmarks are BUDDY_VERIFIED and edges form one continuous route.
+3. Mobile sends a sampled frame batch to Express.
+4. Express adds request/session context and calls FastAPI.
+5. FastAPI returns schema-valid perception.
+6. Express returns accessible scene narration and at most one selected candidate.
+7. Employee/buddy explicitly requests save for a useful stable candidate.
+8. Express deduplicates and immediately stores the record as AI_DRAFT.
+9. Steps 3–8 repeat for the bounded demo area.
+10. Web admin edits and transitions accepted drafts to BUDDY_VERIFIED.
+11. Admin creates directed edges using from/to/maneuver/spoken-cue controls.
+12. Express validates references, self-loops and duplicate directed pairs.
+13. Express publishes only a human-verified graph with usable directed paths.
 ```
 
-The AI does not directly write the database. The save operation always passes through Express policy and validation.
+The admin does not move an object from a temporary store into the database. Drafts already exist in PostgreSQL; review changes their state and graph relations.
 
-## Day 2+ replay flow
+## Day 2+ origin/destination navigation flow
 
 ```text
-1. Mobile loads a PUBLISHED route and starts a NAVIGATE session.
-2. Express returns the first expected landmark and the next verified RouteEdge cue.
-3. Mobile sends current sampled frames as an observation.
-4. FastAPI returns perception without knowing the final action.
-5. Express compares normalised evidence with only the expected ordered landmark.
-6. Match advances `currentSequence`; mobile announces the outgoing RouteEdge cue and next expected landmark.
-7. Insufficient/conflicting evidence keeps the same sequence and returns STOP_AND_RESCAN.
-8. Matching the third/final landmark completes the route.
+1. Mobile loads one PUBLISHED graph.
+2. Screen reader reads landmarks in displayOrder; employee selects origin.
+3. GET /api/v2/routes/{routeId}/reachable-destinations filters by directed reachability.
+4. Employee selects destination from the returned list.
+5. POST /api/v2/routes/{routeId}/sessions sends NAVIGATE + origin/destination.
+6. Express runs deterministic BFS and stores plannedPath.
+7. Session starts AWAITING_START_CONFIRMATION with expectedLandmarkId = origin.
+8. Mobile asks the employee to face the selected origin and capture an observation.
+9. FastAPI returns perception; Express matches only against the expected origin.
+10. If confirmed, Express changes to the first travel step and returns its reviewed spoken cue.
+11. The employee moves using their cane/guide dog/O&M skills; the app does not detect obstacles.
+12. At the next landmark, another observation is matched against only that expected landmark.
+13. A match increments currentPathIndex and returns the next edge cue.
+14. Unclear/conflicting input returns STOP_AND_RESCAN without advancing.
+15. Matching destination completes the session.
 ```
 
-## Matching and uniqueness policy for MVP
+## Deterministic graph and path policy
 
-- Prefer distinctive visible text such as `RECEPTION`, `LEVEL 2` and `MEETING ROOM A`.
+- Edges are directed. Reverse travel requires an explicit reverse edge with its own cue.
+- Relative maneuver belongs to the edge and describes what to do after the source landmark is confirmed.
+- Reachability and pathfinding use published landmarks/edges only.
+- `FEWEST_EDGES` uses unweighted BFS in Express.
+- For equal-length alternatives, enqueue outgoing edges by `displayOrder`, then edge ID, so tests and demos are reproducible.
+- A missing path returns `NO_ROUTE_AVAILABLE`; AI is not called.
+- Origin equal to destination is rejected for the MVP.
+- `displayOrder` supports stable UI/screen-reader reading only and never asserts physical location.
+- No weighted shortest path, continuous localisation or automatic rerouting from an unknown landmark is in scope.
+
+## Landmark matching policy
+
+- Prefer distinctive visible text such as `RECEPTION`, `LEVEL 2`, `MEETING ROOM A` and `RESTROOM`.
 - Express normalises case, whitespace and punctuation before exact/contains comparison.
-- Scene type and stable features are supporting evidence, not proof by themselves.
-- A landmark with the same normalised visible text and type in the same route is a duplicate candidate.
-- Ambiguous duplicate cases remain drafts for human resolution.
-- Route topology rejects self-loops, duplicate edge indexes, missing intermediate connections and landmark IDs outside the route.
-- Relative maneuver belongs to `RouteEdge`; it is not a permanent direction property of a landmark.
-- No model self-reported probability is treated as calibrated confidence.
-- No vector search or visual embedding is required for the demo.
-
-## Contract and repository ownership
-
-- Canonical public contract: `contracts/product-api.openapi.yaml`.
-- Canonical internal contract: `contracts/ai-service.openapi.yaml`.
-- Canonical examples: `contracts/examples/`.
-- Bảo Anh owns public Product API behavior and the Express consumer of the internal contract.
-- Hồng Phúc owns the FastAPI producer of the internal contract.
-- The two owners jointly approve internal schema or semantic changes.
-- Additive optional fields require examples/tests; removing, renaming or changing meaning is a breaking version change.
-- Mock and live FastAPI responses must validate against the same schema.
+- Scene type and stable features support a match but are not proof by themselves.
+- The current expected landmark is the only match target; the model does not select arbitrary graph state.
+- Unreadable, ambiguous or conflicting evidence never advances.
+- No model self-reported confidence is treated as a calibrated probability.
 
 ## Stable failure behavior
 
 | Failure | Express product behavior |
 |---|---|
 | Invalid client request | `VALIDATION_ERROR`; no AI call and no state change |
-| Blurry/dark/unreadable input | `STOP_AND_RESCAN`; no route advance |
+| Unpublished/outdated graph | `INVALID_STATE`; navigation cannot start |
+| Origin/destination unreachable | `NO_ROUTE_AVAILABLE`; no AI call |
+| Wrong/unconfirmed origin | `200` with `AWAITING_START_CONFIRMATION`, `shouldAdvance: false` and no movement cue |
+| Blurry/dark/unreadable input | `STOP_AND_RESCAN`; no path advance |
 | FastAPI schema violation | `AI_INVALID_RESPONSE`; no persistence/advance |
 | Provider unavailable | `AI_PROVIDER_UNAVAILABLE`; retry offered |
-| Timeout | `AI_TIMEOUT`; stale result ignored |
-| Landmark mismatch | Same expected sequence; ask user to rescan |
-| Unreviewed route | Navigation session cannot start |
-| Route marked outdated | Stop replay and request human review |
+| Timeout/stale response | `AI_TIMEOUT` or ignored stale result; no state change |
+| Landmark mismatch | Same expected landmark; ask user to rescan/reorient |
+| Layout changed | Mark graph `OUTDATED` and request human review |
+
+## Contract and repository ownership
+
+- Product API v2 source: `contracts/product-api.openapi.yaml` — Bảo Anh.
+- AI service v1.1 source: `contracts/ai-service.openapi.yaml` — Hồng Phúc produces, Bảo Anh consumes.
+- Shared payload fixtures: `contracts/examples/`.
+- Product API v2 is intentionally breaking from the old fixed linear-route API.
+- AI-service v1.1 is unchanged by graph/path selection; Hồng Phúc does not need Product API routing code.
+- Any AI contract semantic/breaking change requires both owners to update examples and validators together.
 
 ## First vertical slice
 
 ```text
-RECEPTION
-→ LEVEL 2 ELEVATOR
-→ MEETING ROOM A
+Published graph:
+Reception ↔ Elevator Level 2 ↔ Meeting Room A
+                   ↕
+          Restroom Level 2
+
+Demo journey A: Reception → Elevator Level 2 → Meeting Room A
+Demo journey B: Reception → Elevator Level 2 → Restroom Level 2
 ```
 
 Build order:
 
-1. OpenAPI validators and example payloads.
-2. Express mock AI adapter plus in-memory route state.
-3. PostgreSQL persistence.
-4. Mobile Learn and Navigate happy path with a three-landmark demo fixture.
-5. Web review, relative-direction dropdowns and publish.
-6. FastAPI live integration.
-7. Unreadable/timeout/stale-response cases.
-8. Accessibility, eval, deployment and recorded fallback.
+1. Runtime validators and all checked-in contract examples.
+2. Express deterministic mock AI adapter plus in-memory graph/BFS/session state.
+3. PostgreSQL/Prisma persistence and constraints.
+4. Mobile origin/destination selection, start confirmation and one complete path.
+5. Web landmark review, directed-edge dropdowns and graph publication.
+6. FastAPI live perception integration.
+7. Unreadable, unreachable, wrong-start, timeout and stale-response cases.
+8. Accessibility checks, AI eval, deployment and recorded fallback.

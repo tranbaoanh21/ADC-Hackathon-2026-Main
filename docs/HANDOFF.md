@@ -1,16 +1,15 @@
 # Team Handoff
 
-Current state: Stage 4 unique-landmark route scope is confirmed and initial v1 contracts are ready for parallel implementation. No application or FastAPI runtime has been implemented yet.
+Current state: Stage 4 landmark-graph scope and versioned contracts are ready for parallel implementation. No application or FastAPI runtime has been implemented yet.
 
 ## Current integration boundary
 
-- Product contract: `contracts/product-api.openapi.yaml`
-- AI-service contract: `contracts/ai-service.openapi.yaml`
+- Product contract: `contracts/product-api.openapi.yaml` v2.0.0
+- AI-service contract: `contracts/ai-service.openapi.yaml` v1.1.0
 - Examples: `contracts/examples/`
 - Technical flow: `docs/TECHNICAL_FLOW.md`
-- Mock provider: contract defined, implementation pending
-- Live provider: not integrated
-- Database schema: entities planned, migration not created
+- Mock/live providers: contract defined, implementation pending
+- Database schema: entities/constraints planned, migration not created
 - Deployment: not started
 
 ## Latest context handoff
@@ -19,47 +18,44 @@ Current state: Stage 4 unique-landmark route scope is confirmed and initial v1 c
 Date/time: 2026-09-21
 From: Bảo Anh / product-scope thread
 To: Bảo Anh, Hồng Phúc and both coding-agent threads
-Branch/commit: codex/pathmemory-scope-contracts / 986c8f6
-Task objective: Lock the Stage 4 unique-landmark MVP, split repository ownership and create versioned Product/AI contracts.
+Branch/commit: codex/pathmemory-scope-contracts / PENDING_COMMIT
+Task objective: Replace fixed-route replay with a bounded, human-reviewed landmark graph while preserving the perception-only AI boundary.
 
 Confirmed product:
-- Day 1: blind/low-vision employee explores one route with a human buddy; AI proposes structured context for useful unique landmarks. The controlled demo uses three, but the contract/data model permit more.
-- Express validates/deduplicates and stores AI_DRAFT records; AI never writes the database directly.
-- Human admin/buddy edits/verifies landmarks, chooses directed relative maneuvers between them, writes spoken cues and publishes the route on an accessible web console.
-- Day 2 onward: mobile replays the published route using ordered landmarks and relative cues.
-- No exact coordinates, QR, SLAM, obstacle avoidance, RAG, raw image retention or general safety-navigation claim.
+- Day 1: a blind/low-vision employee explores a bounded office area with a human buddy. AI proposes structured candidates; Express stores explicitly accepted candidates as AI_DRAFT in PostgreSQL.
+- Admin web lists the stored drafts. Admin edits/verifies landmarks, creates directed from/to edges, chooses a relative maneuver, edits the spoken cue and publishes the graph.
+- Day 2+: the employee uses a screen reader to select an origin and a destination reachable through published directed edges.
+- Express computes a deterministic FEWEST_EDGES path with BFS and starts in AWAITING_START_CONFIRMATION.
+- Camera perception must confirm the selected origin before Express returns the first movement cue. Later matches advance only along plannedPath.
+- The app provides workplace-memory/orientation speech. It does not detect obstacles, assert safety or replace a cane/guide dog/O&M skills.
+- No exact coordinates, GPS-like navigation, QR, SLAM, RAG or raw-image retention.
+
+Demo graph:
+- Reception
+- Elevator Level 2
+- Meeting Room A
+- Restroom Level 2
+- One branch and explicit reverse edges for supported return travel.
 
 Ownership:
-- Bảo Anh: Expo mobile, React web, Express, PostgreSQL/Prisma, public API, route state machine, mock/live AI adapter, accessibility and application deployment.
-- Hồng Phúc: FastAPI repository/runtime, provider adapter, preprocessing, prompt, structured perception, Pydantic validation, AI eval and AI-service deployment.
-- Shared: AI-service contract semantics, examples, integration tests and breaking changes.
-
-Files changed:
-- AGENTS.md
-- README.md
-- docs/SOLUTION_SCOPE.md
-- docs/PROJECT_STATUS.md
-- docs/TECHNICAL_FLOW.md
-- docs/THREAD_STARTER_PROMPTS.md
-- docs/HANDOFF.md
-- contracts/*.openapi.yaml
-- contracts/examples/*.json
-- related README files
+- Bảo Anh: Expo mobile, React web, Express, PostgreSQL/Prisma, Product API v2, graph validation, BFS, session FSM, mock/live AI adapter, accessibility and application deployment.
+- Hồng Phúc: FastAPI repository/runtime, AI-service v1.1, provider adapter, preprocessing, prompt, structured perception, Pydantic validation, AI eval and AI-service deployment.
+- Shared: AI-service semantics, examples, integration tests and breaking changes.
 
 Contract impact:
-- Product API 1.1.0 removes the schema-level three-landmark ceiling and adds directed RouteEdge configuration while retaining deprecated landmark `spokenCue` fields for compatibility.
-- AI-service contract 1.1.0 adds workplace landmark categories while keeping its per-observation candidate limit independent of total route landmark count.
-- Both implementations must use the checked-in examples and stable error envelope.
+- Product API 2.0.0 is breaking: /api/v2 paths, graph semantics, displayOrder, reachable destinations, origin/destination session request, plannedPath and start confirmation.
+- AI-service 1.1.0 is unchanged. FastAPI still implements POST /internal/v1/perception and never computes product routes.
+- Mock and live AI responses must validate against the same AI-service schema.
 
 Not validated yet:
-- No end-user validation, AI eval, accessibility test, latency measurement or end-to-end runtime exists.
+- No end-user validation, runtime, AI eval, accessibility test, latency measurement or end-to-end demo exists.
 - FastAPI repository URL/path remains TBD.
 
 Next exact action for Bảo Anh:
-- Build Express validators and a deterministic mock adapter from the contracts, then one mobile three-landmark vertical slice.
+- Implement Product API v2 runtime validators, the four-landmark graph fixture, deterministic BFS/session logic and mock perception adapter before UI breadth.
 
 Next exact action for Hồng Phúc:
-- Pull this branch/commit, implement POST /internal/v1/perception in the FastAPI repository, validate the example response and record the AI repository URL/path here.
+- Pull this branch/commit; implement POST /internal/v1/perception from AI-service v1.1 and ai-* examples; record the AI repository URL/path and commit here.
 ```
 
 ## Contract change rule
@@ -75,7 +71,7 @@ FastAPI producer impact
 Example/test updates
 ```
 
-Do not merge a breaking change until both owners have compatible implementations or an agreed version transition.
+Do not merge a breaking AI-boundary change until both owners have compatible implementations or an agreed transition. Product API v2 changes do not require FastAPI to implement graph/path behavior.
 
 ## Handoff rules
 

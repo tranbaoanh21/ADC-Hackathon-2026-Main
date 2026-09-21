@@ -1,0 +1,17 @@
+{
+  "requestId": "mobile-nav-001",
+  "observationId": "a213d2cf-0258-49ec-87c4-70cd7da496ca",
+  "sessionMode": "NAVIGATE",
+  "routeState": "SEEKING_LANDMARK",
+  "landmarkMatchStatus": "MATCHED",
+  "candidateLandmark": null,
+  "expectedLandmark": {
+    "id": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
+    "name": "Elevator Level 2",
+    "displayOrder": 1,
+    "type": "ELEVATOR_AREA"
+  },
+  "spokenMessage": "Đã xác nhận Reception. Đi thẳng để tìm biển Level 2 cạnh thang máy.",
+  "shouldAdvance": true,
+  "retryAllowed": true
+}

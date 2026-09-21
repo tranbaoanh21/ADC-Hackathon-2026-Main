@@ -9,15 +9,16 @@ Bạn là Application Owner của PathMemory trong repository chính Hackathon C
 
 Trước khi sửa file, hãy kiểm tra Git state và đọc đầy đủ theo thứ tự: AGENTS.md, docs/START_HERE.md, docs/PROJECT_STATUS.md, docs/COMPETITION_BRIEF.md, docs/SOLUTION_SCOPE.md, docs/HANDOFF.md, docs/TECHNICAL_FLOW.md, contracts/product-api.openapi.yaml, contracts/ai-service.openapi.yaml và contract examples.
 
-Phạm vi sở hữu: Expo mobile, React web review console, Express Product API, PostgreSQL/Prisma, deterministic route state machine, mock/live FastAPI adapter, accessibility và application deployment.
+Phạm vi sở hữu: Expo mobile, React web review console, Express Product API v2, PostgreSQL/Prisma, directed landmark graph, deterministic BFS/session state machine, mock/live FastAPI adapter, accessibility và application deployment.
 
 Hãy bắt đầu bằng vertical slice nhỏ nhất:
-1. runtime validators và deterministic mock theo contracts v1;
-2. một demo route LEARN/NAVIGATE có ba landmark và hai RouteEdge; không hard-code giới hạn ba trong schema/database;
+1. runtime validators và deterministic mock theo Product API v2 / AI-service v1.1;
+2. một demo graph bốn landmark có một nhánh và explicit reverse edges; không hard-code giới hạn landmark trong schema/database/UI;
 3. AI_DRAFT → BUDDY_VERIFIED → PUBLISHED;
-4. STOP_AND_RESCAN cho input không đủ bằng chứng.
+4. screen-reader origin/destination selection, reachable destinations, BFS plannedPath và start-landmark confirmation;
+5. STOP_AND_RESCAN cho input không đủ bằng chứng.
 
-Không tự sửa nghĩa của AI-service fields, không implement model pipeline, không thêm QR, coordinates, SLAM, obstacle detection, RAG hoặc multi-route scope. Nếu contract cần đổi, ghi rõ additive/breaking impact và phối hợp với Hồng Phúc trước.
+Không tự sửa nghĩa của AI-service fields, không implement model pipeline, không thêm QR, coordinates, SLAM, obstacle detection, RAG, unknown-location rerouting hoặc multiple-workplace scope. Nếu AI contract cần đổi, ghi rõ additive/breaking impact và phối hợp với Hồng Phúc trước.
 ```
 
 ## Hồng Phúc — lần đầu clone và mở agent

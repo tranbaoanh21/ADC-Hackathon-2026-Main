@@ -1,0 +1,6 @@
+{
+  "mode": "NAVIGATE",
+  "originLandmarkId": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+  "destinationLandmarkId": "ffb52187-b769-4a0f-96b3-456292839602",
+  "pathStrategy": "FEWEST_EDGES"
+}

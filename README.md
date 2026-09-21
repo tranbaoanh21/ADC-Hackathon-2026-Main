@@ -4,7 +4,7 @@ Repository chính của team **Hackathon Conquerors** cho RMIT Accessibility Des
 
 Focus area đã được BTC xác nhận: **Visual Impairment — Blind or Low Vision**.
 
-Repository hiện ở trạng thái **scope selected / contract-first implementation ready**. Team đã chọn Stage 4 và một MVP hẹp: học một route onboarding từ các landmark unique, để admin/buddy duyệt, nối bằng hướng tương đối rồi replay từ ngày làm việc tiếp theo. Demo đầu tiên dùng ba landmark; contract và database không hard-code giới hạn này.
+Repository hiện ở trạng thái **landmark-graph scope confirmed / contract-first implementation ready**. Team đã chọn Stage 4: ngày đầu nhân viên và buddy ghi nhận các landmark ổn định; admin duyệt và nối chúng bằng cạnh có hướng; từ ngày sau nhân viên dùng screen reader chọn điểm đầu–điểm đến và nhận speech theo đường đi do Express tính trên graph đã publish. Demo dùng bốn landmark có một nhánh; contract/database không hard-code tổng số landmark.
 
 ## Bắt đầu làm việc
 
@@ -86,7 +86,7 @@ Không bắt buộc xây cả web và mobile. Sau khi đọc brief, chọn clien
 - [x] PlantUML source/rendering convention đã được định nghĩa
 - [x] Competition brief đã được nhập
 - [x] Solution scope Stage 4 đã được team chốt
-- [x] Product API và AI-service contracts v1 đã được tạo
+- [x] Product API v2 và AI-service v1.1 contracts đã được tạo
 - [ ] Application scaffold đã được tạo theo brief
 - [ ] Golden path chạy end-to-end
 
