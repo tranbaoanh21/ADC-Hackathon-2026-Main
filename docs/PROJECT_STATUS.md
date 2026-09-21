@@ -47,7 +47,7 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `codex/pathmemory-scope-contracts` | Lock landmark-graph scope and Product API v2 handoff | Complete at `0590445`; ready for teammate pull | Product API 2.0.0 breaking; AI service remains 1.1.0 | None |
+| Bảo Anh | `codex/pathmemory-scope-contracts` | Lock landmark-graph scope and Product API v2 handoff | Complete at `4e72a76`; ready for teammate pull | Product API 2.0.0 breaking; AI service remains 1.1.0 | None |
 | Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval | Not started | Must remain AI service 1.1-compatible | Needs latest handoff branch/commit |
 
 ## Next implementation gate

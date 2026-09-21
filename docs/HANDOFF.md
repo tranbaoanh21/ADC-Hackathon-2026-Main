@@ -18,7 +18,7 @@ Current state: Stage 4 landmark-graph scope and versioned contracts are ready fo
 Date/time: 2026-09-21
 From: Bảo Anh / product-scope thread
 To: Bảo Anh, Hồng Phúc and both coding-agent threads
-Branch/commit: codex/pathmemory-scope-contracts / 0590445
+Branch/commit: codex/pathmemory-scope-contracts / 4e72a76
 Task objective: Replace fixed-route replay with a bounded, human-reviewed landmark graph while preserving the perception-only AI boundary.
 
 Confirmed product:
