@@ -37,8 +37,8 @@ Current phase: `SCOPE_CONFIRMED_CONTRACTS_READY_FOR_IMPLEMENTATION`
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `codex/pathmemory-scope-contracts` | Lock product scope and shared contracts | Ready for implementation handoff | Initial v1 contracts | None after commit/push |
-| Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval against v1 contract | Not started | Must remain v1-compatible | Needs branch/commit and contract handoff |
+| Bảo Anh | `codex/pathmemory-scope-contracts` | Lock product scope and shared contracts | Complete; ready for implementation handoff | Initial v1 contracts at `27c2af4` | None |
+| Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval against v1 contract | Not started | Must remain v1-compatible | Needs to pull the handoff branch/commit |
 
 ## Next implementation gate
 
