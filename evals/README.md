@@ -52,3 +52,31 @@ cd services/ai
 Use `-Model` or `-Port` only when a different configured model or free local port
 is required. The generated JSONL remains ignored under `evals/runs/`.
 
+## Trigger-aware keyframe extraction
+
+`services/ai/scripts/trigger_keyframes.py` treats each trigger timestamp as a
+bookmark in a temporary guided-walk video. It extracts a short window around the
+trigger, rejects dark or blurry candidates, groups near-duplicate frames using
+cosine similarity and keeps at most three quality representatives. The default
+mode does not call FastAPI and writes only structured selection metrics; all
+extracted frames live in a temporary directory and are deleted after the run.
+
+Run the local example without sending frames:
+
+```powershell
+cd services/ai
+.\.venv\Scripts\python.exe scripts\trigger_keyframes.py `
+  --video ..\..\image_video_test\4500263-hd_1920_1080_24fps.mp4 `
+  --triggers ..\..\evals\cases\trigger-local.example.json
+```
+
+After permission is confirmed and a local/deployed FastAPI instance is ready,
+set `INTERNAL_SERVICE_TOKEN` in the shell and add `--send --base-url <URL>`.
+The script sends one multipart perception request per trigger and validates each
+success/error response against AI-service v1.1. It never sends the whole video.
+
+The default two-second window samples four candidates per second. The starting
+quality/cosine thresholds are engineering defaults for the controlled demo and
+must be calibrated on representative footage; they are not general visual
+quality guarantees.
+
