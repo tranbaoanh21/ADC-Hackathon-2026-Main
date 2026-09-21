@@ -18,22 +18,33 @@ interface InternalAiErrorBody {
 
 const maximumFrameBytes = 3 * 1024 * 1024;
 
-function sanitisedMessage(status: number): string {
-  switch (status) {
-    case 401:
+function sanitisedMessage(code: ConstructorParameters<typeof AiAdapterError>[0]): string {
+  switch (code) {
+    case "UNAUTHORIZED":
       return "AI service authentication failed.";
-    case 413:
+    case "PAYLOAD_TOO_LARGE":
       return "AI service rejected the frame payload size.";
-    case 422:
+    case "VALIDATION_ERROR":
       return "AI service rejected the perception request.";
-    case 504:
+    case "PROVIDER_TIMEOUT":
       return "AI perception service timed out.";
-    default:
+    case "PROVIDER_INVALID_RESPONSE":
+      return "AI service returned an invalid provider response.";
+    case "PROVIDER_UNAVAILABLE":
       return "AI perception service is unavailable.";
   }
 }
 
-function statusErrorCode(status: number): ConstructorParameters<typeof AiAdapterError>[0] {
+function statusErrorCode(
+  status: number,
+  bodyCode?: string,
+): ConstructorParameters<typeof AiAdapterError>[0] {
+  if (
+    status === 503 &&
+    (bodyCode === "PROVIDER_UNAVAILABLE" || bodyCode === "PROVIDER_INVALID_RESPONSE")
+  ) {
+    return bodyCode;
+  }
   switch (status) {
     case 401:
       return "UNAUTHORIZED";
@@ -122,12 +133,13 @@ export class HttpAiAdapter implements AiAdapter {
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as InternalAiErrorBody | null;
-        const code = statusErrorCode(response.status);
-        throw new AiAdapterError(code, sanitisedMessage(response.status), {
+        const code = statusErrorCode(response.status, body?.error?.code);
+        const upstreamCodeMatches = body?.error?.code === code;
+        throw new AiAdapterError(code, sanitisedMessage(code), {
           retryable:
-            body?.error?.retryable ??
+            (upstreamCodeMatches ? body?.error?.retryable : undefined) ??
             (code === "PROVIDER_UNAVAILABLE" || code === "PROVIDER_TIMEOUT"),
-          requestId: body?.error?.requestId ?? input.requestId,
+          requestId: (upstreamCodeMatches ? body?.error?.requestId : undefined) ?? input.requestId,
         });
       }
 

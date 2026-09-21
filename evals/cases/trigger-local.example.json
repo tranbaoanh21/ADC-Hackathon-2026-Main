@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "sessionId": "guided-walk-demo-001",
+  "triggers": [
+    {
+      "triggerId": "trigger-001",
+      "timestampMs": 5000,
+      "createdBy": "ADMIN"
+    },
+    {
+      "triggerId": "trigger-002",
+      "timestampMs": 18000,
+      "createdBy": "ADMIN"
+    }
+  ]
+}

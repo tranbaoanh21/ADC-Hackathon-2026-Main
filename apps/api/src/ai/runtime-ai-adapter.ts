@@ -20,7 +20,7 @@ export function createRuntimeAiAdapter(environment: RuntimeEnvironment): Runtime
     throw new Error('AI_ADAPTER must be either "mock" or "live".');
   }
 
-  const parsedTimeout = Number.parseInt(environment.AI_TIMEOUT_MS ?? "6000", 10);
+  const parsedTimeout = Number.parseInt(environment.AI_TIMEOUT_MS ?? "18000", 10);
   return {
     adapter: new HttpAiAdapter({
       baseUrl: environment.AI_SERVICE_URL ?? "",

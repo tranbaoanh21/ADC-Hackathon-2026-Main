@@ -62,6 +62,47 @@ describe("HttpAiAdapter", () => {
     expect((error as Error).message).not.toContain("Internal detail");
   });
 
+  it("preserves FastAPI invalid-provider-response semantics for HTTP 503", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json(
+        {
+          error: {
+            code: "PROVIDER_INVALID_RESPONSE",
+            message: "Raw provider detail must not escape.",
+            retryable: true,
+            requestId: input.requestId,
+          },
+        },
+        { status: 503 },
+      ),
+    );
+
+    const error = await adapter(fetchMock)
+      .analyseFrames(input)
+      .catch((value: unknown) => value);
+    expect(error).toMatchObject({
+      code: "PROVIDER_INVALID_RESPONSE",
+      retryable: true,
+      requestId: input.requestId,
+    });
+    expect((error as Error).message).toBe("AI service returned an invalid provider response.");
+  });
+
+  it("does not trust an error code that conflicts with the HTTP status", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json(
+        { error: { code: "UNAUTHORIZED", message: "Internal detail", retryable: false } },
+        { status: 503 },
+      ),
+    );
+
+    await expect(adapter(fetchMock).analyseFrames(input)).rejects.toMatchObject({
+      code: "PROVIDER_UNAVAILABLE",
+      retryable: true,
+      requestId: input.requestId,
+    });
+  });
+
   it("maps a local abort to a retryable provider timeout", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => {
       throw new DOMException("aborted", "AbortError");

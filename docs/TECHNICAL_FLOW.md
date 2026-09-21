@@ -2,7 +2,7 @@
 
 Status: `IMPLEMENTED APPLICATION BOUNDARY — PRODUCT API V2 / AI SERVICE V1.1`
 
-This document defines the implementation boundary for the confirmed Stage 4 landmark-graph MVP. Mobile, web, Express and persistence are implemented; Hồng Phúc's live FastAPI runtime and the live provider integration smoke remain pending.
+This document defines the implementation boundary for the confirmed Stage 4 landmark-graph MVP. Mobile, web, Express, persistence and Hồng Phúc's FastAPI runtime are implemented. Local Express-to-FastAPI mock integration passes; deployed end-to-end Gemini integration remains pending.
 
 ## One-sentence architecture
 

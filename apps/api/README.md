@@ -57,9 +57,11 @@ Live mode requires all server-side values:
 AI_ADAPTER=live
 AI_SERVICE_URL=https://YOUR_FASTAPI_SERVICE
 AI_SERVICE_TOKEN=replace-with-server-side-token
-AI_TIMEOUT_MS=6000
+AI_TIMEOUT_MS=18000
 ```
 
 Express forwards one to three JPEG/PNG frames as multipart to `POST /internal/v1/perception`, authenticates with a bearer token, validates the returned perception schema and maps timeout/provider failures into the stable Product API error envelope. The server logs whether it started in `mock` or `live` mode. It never silently falls back from a failed live request to mock output.
 
-The live end-to-end smoke test remains pending until Hồng Phúc provides the FastAPI repository/commit, deployed URL, internal credential and model metadata.
+`AI_TIMEOUT_MS` must be slightly longer than FastAPI's `PROVIDER_TIMEOUT_SECONDS`, so Express can receive and map FastAPI's stable timeout response instead of aborting first. The checked-in defaults are 18 seconds and 15 seconds respectively. Do not increase them without checking mobile feedback, provider cost and measured latency.
+
+The local Express-to-FastAPI mock smoke passes. A real end-to-end Gemini smoke remains pending until deployment/runtime credentials are available; do not report the local mock as AI-quality evidence.

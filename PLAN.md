@@ -353,15 +353,15 @@ Verification on 2026-09-22:
 - App speech stops before each message and delegates announcements to the active screen reader instead of speaking over it.
 - Physical-device camera, both complete demo journeys and VoiceOver/TalkBack remain required before this phase can be marked complete.
 
-### Phase 6 — Live FastAPI integration — `ADAPTER IMPLEMENTED; LIVE SMOKE BLOCKED BY FASTAPI HANDOFF`
+### Phase 6 — Live FastAPI integration — `MOCK E2E PASS; LIVE GEMINI E2E PENDING`
 
 Dependencies from Hồng Phúc:
 
-- [ ] FastAPI repository URL and commit
-- [ ] `GET /health`
-- [ ] `POST /internal/v1/perception`
-- [ ] Server-side internal token configuration
-- [ ] Provider/model ID, prompt version and known limitations
+- [x] FastAPI monorepo path `services/ai/` and source commit `7dac78d`
+- [x] `GET /health`
+- [x] `POST /internal/v1/perception`
+- [x] Server-side internal token configuration
+- [x] Provider/model ID, prompt version and known limitations recorded by AI owner
 
 Bảo Anh deliverables:
 
@@ -383,7 +383,9 @@ Verification on 2026-09-22:
 - Express still validates every successful AI response against `aiPerceptionSchema` before product state can advance or evidence can be saved.
 - Express upload and adapter defense-in-depth both enforce one to three JPEG/PNG frames and a three-megabyte per-frame limit.
 - `AI_ADAPTER=mock` remains the explicit default for development; `AI_ADAPTER=live` fails fast when URL/token/timeout configuration is invalid.
-- No live claim has been made: FastAPI repository, deployed URL, internal token and model/provider evidence are still required from Hồng Phúc for the end-to-end gate.
+- FastAPI Ruff and 53 pytest cases pass; local Express `AI_ADAPTER=live` → FastAPI mock → validated Product API observation returns `200`.
+- Express preserves FastAPI `PROVIDER_INVALID_RESPONSE` semantics and uses an 18-second timeout above FastAPI's 15-second provider timeout.
+- Hồng Phúc recorded a permission-approved six-observation Gemini run, but no end-to-end Express → deployed FastAPI → Gemini claim is made until that path is repeated with integration configuration.
 
 ### Phase 7 — Brand, accessibility and safety polish — `CODE CHECKS COMPLETE; DEVICE QA PENDING`
 
@@ -490,9 +492,9 @@ Stop adding features and move to reliability/accessibility when any condition is
 
 ## 11. Current blockers and TBDs
 
-- FastAPI repository URL/commit: `TBD — Hồng Phúc`
+- FastAPI monorepo path/commit: `services/ai/` at source commit `7dac78d`
 - FastAPI deployed URL/internal credential: `TBD — Hồng Phúc`
-- Selected provider/model ID: `TBD_AFTER_EVAL — Hồng Phúc`
+- Pilot provider/model ID: `Google Gemini / gemini-3.1-flash-lite`; production confirmation remains pending
 - End-user validation of physical-orientation priority: `Pending`
 - Railway/Vercel project URLs: `Not created`
 - Actual accessibility devices/screen readers used for recorded test: `TBD`

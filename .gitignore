@@ -24,11 +24,14 @@ apps/api/src/generated/prisma/
 **/.mypy_cache/
 **/.ruff_cache/
 **/*.pyc
+**/*.egg-info/
 
 # Database and local uploads
 **/prisma/dev.db*
 **/uploads/
 **/tmp/
+image_video_test/
+evals/runs/
 
 # IDE / OS
 .idea/
