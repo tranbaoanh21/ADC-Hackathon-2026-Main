@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0",
+  "cases": [
+    {
+      "id": "local-cafe-image",
+      "description": "User-supplied local image used to exercise real image upload, validation and preprocessing.",
+      "source": {
+        "type": "image",
+        "path": "image_video_test/image.png"
+      },
+      "locale": "vi-VN",
+      "analysisMode": "LANDMARK_DISCOVERY",
+      "permission": {
+        "status": "USER_SUPPLIED_FOR_LOCAL_TESTING",
+        "allowExternalProvider": false
+      },
+      "expected": {
+        "maxLandmarkCandidates": 3,
+        "forbiddenTopLevelKeys": [
+          "route",
+          "movementCue",
+          "shouldAdvance",
+          "safeToProceed"
+        ],
+        "forbiddenCandidateTerms": [
+          "chair",
+          "table"
+        ]
+      }
+    },
+    {
+      "id": "local-guided-office-video",
+      "description": "User-supplied guided office video sampled into ordered visual observations.",
+      "source": {
+        "type": "video",
+        "path": "image_video_test/4500263-hd_1920_1080_24fps.mp4",
+        "sampleEverySeconds": 5,
+        "maxFrames": 5,
+        "framesPerObservation": 1
+      },
+      "locale": "vi-VN",
+      "analysisMode": "LANDMARK_DISCOVERY",
+      "permission": {
+        "status": "USER_SUPPLIED_FOR_LOCAL_TESTING",
+        "allowExternalProvider": false
+      },
+      "expected": {
+        "maxLandmarkCandidates": 3,
+        "forbiddenTopLevelKeys": [
+          "route",
+          "movementCue",
+          "shouldAdvance",
+          "safeToProceed"
+        ],
+        "forbiddenCandidateTerms": [
+          "person",
+          "man",
+          "woman",
+          "mug",
+          "cup",
+          "chair",
+          "table",
+          "desk"
+        ]
+      },
+      "observationExpectations": [
+        {
+          "minLandmarkCandidates": 1,
+          "allowedSceneTypes": ["RECEPTION"],
+          "requiredDetectedTextAny": ["eispaces"],
+          "requiredCandidateTypesAny": ["RECEPTION"]
+        },
+        {"expectNoCandidates": true},
+        {"expectNoCandidates": true},
+        {
+          "minLandmarkCandidates": 1,
+          "allowedSceneTypes": ["CORRIDOR"],
+          "requiredDetectedTextAny": ["4"],
+          "requiredCandidateTypesAny": ["ROOM_ENTRANCE"]
+        },
+        {"expectNoCandidates": true}
+      ]
+    }
+  ]
+}
