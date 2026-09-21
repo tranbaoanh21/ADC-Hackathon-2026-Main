@@ -1,15 +1,37 @@
-# Mobile client
+# PathMemory mobile
 
-Expo/React Native là primary client của landmark-graph MVP.
+Expo/React Native is the primary client for the bounded landmark-graph MVP. It calls only the public Express Product API.
 
-Mobile chỉ gọi public Express HTTPS URL. Không đặt model token trong `EXPO_PUBLIC_*`.
+## Implemented flows
 
-Mobile phải hỗ trợ Learn, screen-reader origin/destination selection, camera confirmation of the selected origin, TTS for human-reviewed edge cues, stale-response suppression và accessible loading/error/status. Client không hard-code số landmark, không tính path/toạ độ, không quyết định match và không tuyên bố safety navigation. Người dùng tiếp tục dùng gậy, chó dẫn đường hoặc kỹ năng O&M để phát hiện chướng ngại và di chuyển an toàn.
+- `Learn`: create a draft workplace graph, start a Learn session, explicitly open the camera, upload one sampled frame, review the AI candidate and explicitly save an `AI_DRAFT` landmark for buddy review.
+- `Navigate`: load a published graph, choose an ordered origin and reachable destination, start a deterministic Express-planned session, confirm the origin and each expected landmark, hear the next human-reviewed cue and complete at the destination.
+- Recovery: visible and announced loading/error states, timeout messaging, stop-and-rescan instructions, replay and stale-response suppression.
 
-Scaffold Expo SDK 57 hiện chạy bằng:
+The camera is never silently active. A camera capture is held only as a temporary local file, uploaded to Express and deleted after the request settles. The app does not persist raw image URIs. Express and FastAPI must also preserve the repository's no-raw-media-retention rule.
+
+When a screen reader is active, PathMemory stops its own Expo Speech output and uses the platform accessibility announcement. This avoids uncontrolled TTS and VoiceOver/TalkBack overlap. Actual device testing is still required.
+
+## Run locally
+
+From the repository root:
 
 ```bash
-npm run dev:mobile
+npm run dev:api
+EXPO_PUBLIC_API_URL=http://YOUR_COMPUTER_LAN_IP:3000 npm run dev:mobile
 ```
 
-Hiện chỉ có accessible placeholder shell; camera, Learn và Navigate flows chưa được implement.
+`localhost` works only when the mobile runtime shares the host network namespace. A physical phone normally needs the computer's LAN IP or a deployed HTTPS Express URL. Do not put database or model credentials in `EXPO_PUBLIC_*` variables.
+
+Useful checks:
+
+```bash
+npm run typecheck --workspace @pathmemory/mobile
+npm run test --workspace @pathmemory/mobile
+npx expo install --check
+npx expo export --platform android --output-dir /tmp/pathmemory-mobile-export
+```
+
+## Safety boundary
+
+PathMemory confirms only reviewed landmarks and reads reviewed relative cues. It does not detect obstacles, assert that a route is safe, provide exact coordinates or replace a cane, guide dog or orientation-and-mobility skills.

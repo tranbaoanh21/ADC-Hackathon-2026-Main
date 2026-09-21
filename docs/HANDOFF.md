@@ -1,10 +1,10 @@
 # Team Handoff
 
-Current state: Product API v2, Prisma/PostgreSQL persistence and the React admin review console are implemented. Expo mobile is the next application milestone. FastAPI implementation remains owned by Hồng Phúc.
+Current state: Product API v2, Prisma/PostgreSQL persistence, React admin review console and Expo mobile Learn/Navigate flows are implemented. Device/screen-reader QA and the live FastAPI adapter remain pending. FastAPI implementation remains owned by Hồng Phúc.
 
 Application execution is tracked in root `PLAN.md` on branch `codex/application-vertical-slice`. Bảo Anh's implementation order is deterministic domain/API mock first, then PostgreSQL, admin web, mobile and live FastAPI integration. Hồng Phúc's AI-service boundary remains unchanged.
 
-Application progress on 2026-09-22: the graph/BFS/session kernel, every Product API v2 endpoint, in-memory/Prisma repositories, migration/seed, AI mock and React admin review/publish UI are implemented. API/database tests and an Edge accessibility-tree/browser smoke pass. Actual screen-reader QA and Expo mobile remain pending. This progress does not change either shared OpenAPI contract.
+Application progress on 2026-09-22: the graph/BFS/session kernel, every Product API v2 endpoint, in-memory/Prisma repositories, migration/seed, AI mock, React admin review/publish UI and Expo Learn/Navigate camera flows are implemented. API/database tests, an Edge accessibility-tree/browser smoke, mobile unit tests and Android bundle export pass. Actual VoiceOver/TalkBack, physical-camera E2E and live FastAPI integration remain pending. This progress does not change either shared OpenAPI contract.
 
 ## Current integration boundary
 
@@ -16,6 +16,7 @@ Application progress on 2026-09-22: the graph/BFS/session kernel, every Product 
 - Mock/live providers: deterministic mock implemented; live FastAPI adapter pending
 - Database schema: Prisma 7.10 schema, migration, constraints, seed and runtime adapter implemented and verified
 - Admin web: landmark review, directed-edge editing, cue replay, publish/outdated and accessible error/status behavior implemented
+- Expo mobile: explicit per-scan camera, Day-1 draft/save, screen-reader origin/destination selection, stale-response suppression, TTS/screen-reader coordination, replay, safety copy and route completion implemented
 - Deployment: not started
 
 ## Latest context handoff
@@ -58,7 +59,7 @@ Not validated yet:
 - FastAPI repository URL/path remains TBD.
 
 Next exact action for Bảo Anh:
-- Implement the Expo mobile Learn/Navigate flow against Product API v2, including explicit camera state, non-overlapping speech, stale-response protection and safety copy.
+- Implement and test the Express live FastAPI adapter against AI-service v1.1 while keeping the deterministic mock mode available; complete device and screen-reader QA when a phone is available.
 
 Next exact action for Hồng Phúc:
 - Pull this branch/commit; implement POST /internal/v1/perception from AI-service v1.1 and ai-* examples; record the AI repository URL/path and commit here.

@@ -314,34 +314,43 @@ Verification on 2026-09-22:
 - Responsive desktop screenshot was visually inspected; no overlap or clipped primary control was observed.
 - Actual VoiceOver/NVDA keyboard walkthrough remains required before marking this phase complete.
 
-### Phase 5 — Accessible Expo mobile
+### Phase 5 — Accessible Expo mobile — `IMPLEMENTED; DEVICE AND SCREEN-READER QA PENDING`
 
 Screens/states:
 
-- [ ] Home: Learn workplace / Navigate workplace
-- [ ] Learn camera state and active-processing announcement
-- [ ] Candidate landmark review and explicit Save
-- [ ] Origin picker ordered by `displayOrder`
-- [ ] Reachable destination picker
-- [ ] Start-landmark confirmation
-- [ ] Seeking next landmark
-- [ ] `STOP_AND_RESCAN`
-- [ ] Route completed
+- [x] Home: Learn workplace / Navigate workplace
+- [x] Learn camera state and active-processing announcement
+- [x] Candidate landmark review and explicit Save
+- [x] Origin picker ordered by `displayOrder`
+- [x] Reachable destination picker
+- [x] Start-landmark confirmation
+- [x] Seeking next landmark
+- [x] `STOP_AND_RESCAN`
+- [x] Route completed
 
 Required behavior:
 
-- [ ] Camera is never silently active
+- [x] Camera is never silently active
 - [ ] Primary controls are operable with VoiceOver/TalkBack
-- [ ] TTS supports replay and does not overlap uncontrolled speech
-- [ ] Loading, timeout, error, match and completion are announced
-- [ ] Stale response does not update state or speak
-- [ ] Important controls use large touch targets and scalable text
-- [ ] Safety copy states that the app does not detect obstacles
+- [x] TTS supports replay and suppresses app TTS when a screen reader is enabled
+- [x] Loading, timeout, error, match and completion have accessible live-region output
+- [x] Stale response does not update state or speak
+- [x] Important controls use large touch targets and scalable text
+- [x] Safety copy states that the app does not detect obstacles
 
 Gate:
 
 - Both demo journeys complete against the Express mock.
 - Wrong start, unreadable observation and timeout are recoverable without sighted UI dependence.
+
+Verification on 2026-09-22:
+
+- Expo SDK 57 dependency check passed using its local compatibility map; camera, speech and file-system packages match SDK 57.
+- Mobile TypeScript check and four pure presentation/stale-response tests passed.
+- Android production bundle exported successfully through Metro.
+- Camera is opt-in per scan; each temporary camera file is deleted after the upload settles and no URI is persisted in product state.
+- App speech stops before each message and delegates announcements to the active screen reader instead of speaking over it.
+- Physical-device camera, both complete demo journeys and VoiceOver/TalkBack remain required before this phase can be marked complete.
 
 ### Phase 6 — Live FastAPI integration
 
