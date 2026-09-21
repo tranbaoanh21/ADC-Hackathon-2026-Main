@@ -53,7 +53,7 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
 | Bảo Anh | `codex/pathmemory-scope-contracts` | Lock landmark-graph scope and Product API v2 handoff | Complete at `4e72a76`; ready for teammate pull | Product API 2.0.0 breaking; AI service remains 1.1.0 | None |
-| Hồng Phúc | `feat/fastapi-perception`, `services/ai/` | Implement and visually evaluate mock plus Gemini-adapter `POST /internal/v1/perception` vertical slice | Implemented at `bd3b4f8`; Ruff/format and 48 tests pass; local visual run has 6/6 schema-valid and defined semantic-expectation passes | None; remains AI service 1.1-compatible | Express integration, deployment and expansion to 10–20 fixed cases remain follow-up work |
+| Hồng Phúc | `feat/fastapi-perception`, `services/ai/` | Implement perception plus trigger-aware video keyframe preprocessing | Perception implemented at `bd3b4f8`; trigger selector at `6efe2a8`; Ruff/format and 53 tests pass; local visual run has 6/6 schema-valid and defined semantic-expectation passes | None; remains AI service 1.1-compatible | Product trigger integration, deployment and expansion to 10–20 fixed cases remain follow-up work |
 
 ## Next implementation gate
 
@@ -73,7 +73,7 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 | Web review console | Bảo Anh | Not scaffolded | Not deployed | TBD |
 | Express API | Bảo Anh | Not scaffolded | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Not configured | Not provisioned | Secret; never record connection string here |
-| FastAPI AI service | Hồng Phúc | Mock and Gemini adapter in `services/ai/`; 48 tests plus local health/authenticated mock and visual eval pass on Python 3.13.9 | Not deployed | Monorepo path confirmed; production URL TBD |
+| FastAPI AI service | Hồng Phúc | Mock and Gemini adapter plus trigger-aware temporary-video keyframe selector in `services/ai/`; 53 tests plus local health/authenticated mock and visual eval pass on Python 3.13.9 | Not deployed | Monorepo path confirmed; production URL TBD |
 | Hosted vision model | Hồng Phúc | `gemini-3.1-flash-lite` with `landmark-perception-v3` returned 6/6 schema-valid and defined semantic-expectation passes on one PNG plus five sampled video frames | Not deployed | Small permission-approved local set only; FastAPI-side P50 3064 ms, P95 11741 ms, max 13989 ms; not end-to-end latency or a general accuracy claim |
 
 ## Evidence status

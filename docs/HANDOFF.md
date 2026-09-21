@@ -49,7 +49,16 @@ Evidence boundary:
 - Mock output is development/integration evidence only, not AI-quality evidence.
 
 Contract impact: none.
-Local verification: Python 3.13.9; Ruff lint/format passed; 48 pytest cases passed; local Uvicorn health and authenticated mock perception returned 200. The visual eval runner extracted five ordered frames from a local video, sent them with one local PNG through `gemini-3.1-flash-lite`, validated AI-service v1.1 output and recorded only structured JSONL under the ignored `evals/runs/` directory. Raw media remains ignored. No API key was printed or recorded in repository documentation.
+Local verification: Python 3.13.9; Ruff lint/format passed; 53 pytest cases passed; local Uvicorn health and authenticated mock perception returned 200. The visual eval runner extracted five ordered frames from a local video, sent them with one local PNG through `gemini-3.1-flash-lite`, validated AI-service v1.1 output and recorded only structured JSONL under the ignored `evals/runs/` directory. Raw media remains ignored. No API key was printed or recorded in repository documentation.
+
+Trigger-aware keyframe update:
+- Commit `6efe2a8` adds `services/ai/scripts/trigger_keyframes.py` without changing AI-service v1.1.
+- Input is a temporary guided-walk video plus a JSON manifest of trigger timestamps.
+- Each trigger extracts a two-second temporary window at four candidate frames per second, filters dark/blurry candidates, groups near-duplicates with cosine similarity and keeps at most three frames.
+- The frame nearest the trigger is always retained when it passes the quality gate; other representatives are ranked by quality.
+- Default mode is offline selection only. `--send` explicitly sends one multipart perception request per trigger; the whole video is never sent to FastAPI.
+- Offline verification used the local guided-office video and two triggers. Mock HTTP verification produced two observations with three selected frames each; both returned HTTP 200 and validated against the shared schema.
+- The cosine and quality thresholds are controlled-demo defaults, not general guarantees. Product-side trigger capture, persistence and admin review remain Bảo Anh's integration work.
 
 Files for Bảo Anh:
 - Canonical interface: `contracts/ai-service.openapi.yaml` v1.1.0.
@@ -57,6 +66,7 @@ Files for Bảo Anh:
 - FastAPI setup and environment: `services/ai/README.md` and `services/ai/.env.example`.
 - Fixed local visual manifest: `evals/cases/visual-local.json`.
 - Live/local eval command: `services/ai/scripts/run_live_visual_eval.ps1`.
+- Trigger keyframe command: `services/ai/scripts/trigger_keyframes.py` with example manifest `evals/cases/trigger-local.example.json`.
 
 Integration action for Bảo Anh:
 1. Keep mobile/web calling Express only; do not call FastAPI directly.
@@ -67,7 +77,7 @@ Integration action for Bảo Anh:
 6. Map timeout/provider/schema errors without advancing a route or navigation session.
 
 Known follow-up work for Hồng Phúc:
-- Expand the fixed visual set from 6 observations to 10-20 representative positive and negative cases.
+- Expand the fixed visual set from 6 observations to 10-20 representative positive and negative cases, including trigger-window quality and duplicate-selection cases.
 - Deploy FastAPI and record its production identifier without recording secrets.
 - Measure end-to-end latency and cost with the Express integration; current latency is FastAPI-side only.
 ```
