@@ -92,12 +92,63 @@ export interface NavigationSession {
   readonly finishedAt: string | null;
 }
 
+export interface LearnSession {
+  readonly id: string;
+  readonly routeId: string;
+  readonly mode: "LEARN";
+  readonly status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  readonly startedAt: string;
+  readonly finishedAt: string | null;
+}
+
+export type ProductSession = NavigationSession | LearnSession;
+
 export type FrameQuality = "USABLE" | "BLURRY" | "TOO_DARK" | "OBSTRUCTED" | "UNREADABLE";
 
 export interface PerceptionEvidence {
   readonly frameQuality: FrameQuality;
   readonly detectedText: readonly string[];
   readonly candidateVisibleText?: readonly string[];
+}
+
+export interface CandidateLandmark {
+  readonly proposedName: string;
+  readonly type: LandmarkType;
+  readonly visibleText: readonly string[];
+  readonly stableFeatures: readonly string[];
+  readonly draftDescription: string;
+  readonly transientFeatures?: readonly string[];
+}
+
+export interface AiPerception {
+  readonly schemaVersion: "1.0";
+  readonly requestId: string;
+  readonly frameQuality: FrameQuality;
+  readonly detectedText: readonly string[];
+  readonly sceneType:
+    | "RECEPTION"
+    | "ELEVATOR_AREA"
+    | "CORRIDOR"
+    | "ROOM_ENTRANCE"
+    | "OTHER"
+    | "UNKNOWN";
+  readonly landmarkCandidates: readonly CandidateLandmark[];
+  readonly uncertaintyReasons: readonly string[];
+  readonly model: {
+    readonly provider: string;
+    readonly modelId: string;
+    readonly promptVersion: string;
+  };
+  readonly processingTimeMs: number;
+}
+
+export interface StoredObservation {
+  readonly id: string;
+  readonly requestId: string;
+  readonly sessionId: string;
+  readonly capturedAt: string;
+  readonly perception: AiPerception;
+  readonly createdAt: string;
 }
 
 export type LandmarkMatchStatus = "MATCHED" | "NOT_MATCHED" | "INSUFFICIENT_EVIDENCE";

@@ -197,40 +197,48 @@ Verification on 2026-09-22:
 - Typed demo fixture is asserted equal to the canonical published-route JSON example.
 - Root lint, all workspace typechecks and API/web builds passed.
 
-### Phase 2 — Express Product API v2 with deterministic mock
+### Phase 2 — Express Product API v2 with deterministic mock — `COMPLETE`
 
 Priority endpoints:
 
-- [ ] `GET /health`
-- [ ] `GET /api/v2/routes/:routeId`
-- [ ] `GET /api/v2/routes/:routeId/reachable-destinations`
-- [ ] `POST /api/v2/routes/:routeId/sessions`
-- [ ] `POST /api/v2/sessions/:sessionId/observations`
+- [x] `GET /health`
+- [x] `GET /api/v2/routes/:routeId`
+- [x] `GET /api/v2/routes/:routeId/reachable-destinations`
+- [x] `POST /api/v2/routes/:routeId/sessions`
+- [x] `POST /api/v2/sessions/:sessionId/observations`
 
 Day-1/admin endpoints:
 
-- [ ] `POST /api/v2/routes`
-- [ ] `POST /api/v2/sessions/:sessionId/landmarks`
-- [ ] `PATCH /api/v2/routes/:routeId/landmarks/:landmarkId`
-- [ ] `PUT /api/v2/routes/:routeId/edges`
-- [ ] `POST /api/v2/routes/:routeId/publish`
-- [ ] `POST /api/v2/routes/:routeId/mark-outdated`
-- [ ] `POST /api/v2/sessions/:sessionId/finish`
+- [x] `POST /api/v2/routes`
+- [x] `POST /api/v2/sessions/:sessionId/landmarks`
+- [x] `PATCH /api/v2/routes/:routeId/landmarks/:landmarkId`
+- [x] `PUT /api/v2/routes/:routeId/edges`
+- [x] `POST /api/v2/routes/:routeId/publish`
+- [x] `POST /api/v2/routes/:routeId/mark-outdated`
+- [x] `POST /api/v2/sessions/:sessionId/finish`
 
 Infrastructure:
 
-- [ ] Zod/runtime validation for client input, AI output and product response
-- [ ] Stable `ErrorResponse` mapping
-- [ ] In-memory repositories for the first running slice
-- [ ] Deterministic AI mock using checked-in `ai-perception-success.json`
-- [ ] Provider unavailable, timeout, unreadable and stale-response behavior
-- [ ] Request IDs without private frame/payload logging
+- [x] Zod/runtime validation for client input, AI output and product response
+- [x] Stable `ErrorResponse` mapping
+- [x] In-memory repositories for the first running slice
+- [x] Deterministic AI mock aligned with checked-in `ai-perception-success.json`
+- [x] Provider unavailable, timeout, unreadable and stale-response behavior
+- [x] Request IDs without private frame/payload logging
 
 Gate:
 
 - Supertest integration tests cover both demo paths and critical failures.
 - Returned fixtures validate against Product API v2 semantics.
 - A wrong-start observation produces `shouldAdvance: false`.
+
+Verification on 2026-09-22:
+
+- 29 API/domain tests passed across 6 test files.
+- Supertest covers graph retrieval, reachable destinations, deterministic session planning, both demo routes, wrong-start, unreadable, duplicate/stale request, timeout and the complete Day-1 draft/review/publish flow.
+- Client, AI and outgoing product payloads are runtime-validated; invalid AI output is mapped to `AI_INVALID_RESPONSE`.
+- Uploaded frame buffers remain request-local and are never written to the repository.
+- API lint, typecheck and production build passed.
 
 ### Phase 3 — PostgreSQL and Prisma persistence
 
