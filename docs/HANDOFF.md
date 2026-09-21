@@ -19,7 +19,7 @@ Current state: Stage 4 unique-landmark route scope is confirmed and initial v1 c
 Date/time: 2026-09-21
 From: Bảo Anh / product-scope thread
 To: Bảo Anh, Hồng Phúc and both coding-agent threads
-Branch/commit: codex/pathmemory-scope-contracts / 27c2af4
+Branch/commit: codex/pathmemory-scope-contracts / 986c8f6
 Task objective: Lock the Stage 4 unique-landmark MVP, split repository ownership and create versioned Product/AI contracts.
 
 Confirmed product:
