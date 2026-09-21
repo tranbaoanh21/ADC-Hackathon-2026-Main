@@ -47,7 +47,7 @@ Current phase: `APPLICATION_IMPLEMENTATION_STARTED`
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phase 0 complete; Phase 1 next | No contract change | None |
+| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phases 0–1 complete; Phase 2 Express mock API next | No contract change | None |
 | Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval | Not started | Must remain AI service 1.1-compatible | Needs latest handoff branch/commit |
 
 ## Next implementation gate
@@ -66,7 +66,7 @@ Current phase: `APPLICATION_IMPLEMENTATION_STARTED`
 |---|---|---|---|---|
 | Mobile | Bảo Anh | Expo SDK 57 shell; typecheck passes | Not built | TBD |
 | Web review console | Bảo Anh | React/Vite shell; build passes | Not deployed | TBD |
-| Express API | Bảo Anh | Express/TypeScript shell; health test/build pass | Not deployed | TBD |
+| Express API | Bảo Anh | Shell plus tested graph/BFS/session kernel; 22 tests pass | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Not configured | Not provisioned | Secret; never record connection string here |
 | FastAPI AI service | Hồng Phúc | Not implemented | Not deployed | Repository and URL TBD |
 | Hosted vision model | Hồng Phúc | Not integrated | Not verified | Model ID TBD; never record API key here |

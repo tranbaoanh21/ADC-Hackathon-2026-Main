@@ -4,6 +4,8 @@ Current state: Stage 4 landmark-graph scope and versioned contracts are ready fo
 
 Application execution is tracked in root `PLAN.md` on branch `codex/application-vertical-slice`. Bảo Anh's implementation order is deterministic domain/API mock first, then PostgreSQL, admin web, mobile and live FastAPI integration. Hồng Phúc's AI-service boundary remains unchanged.
 
+Application progress on 2026-09-22: workspace shells and the pure TypeScript graph/BFS/navigation-session kernel are implemented and tested. Express product endpoints, repositories and AI adapters remain pending. This progress does not change either shared OpenAPI contract.
+
 ## Current integration boundary
 
 - Product contract: `contracts/product-api.openapi.yaml` v2.0.0

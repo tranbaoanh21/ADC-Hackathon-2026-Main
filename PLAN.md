@@ -161,35 +161,41 @@ Verification on 2026-09-22:
 - `expo install --check` reported dependencies up to date for Expo SDK 57.
 - `npm audit --omit=dev` reported 10 moderate transitive issues in Expo tooling. The suggested automatic fix downgrades Expo to SDK 46, so no destructive/major downgrade was applied; reassess when Expo publishes compatible patched dependencies.
 
-### Phase 1 — Deterministic domain kernel
+### Phase 1 — Deterministic domain kernel — `COMPLETE`
 
 Deliverables:
 
-- [ ] Product/API domain types aligned with Product API v2
-- [ ] Four-landmark graph fixture aligned with checked-in examples
-- [ ] Directed-edge validation: endpoint membership, no self-loop, no duplicate pair
-- [ ] Reachable-destination traversal
-- [ ] Deterministic unweighted BFS
-- [ ] Tie-break by edge `displayOrder`, then edge ID
-- [ ] Navigation-session constructor with `AWAITING_START_CONFIRMATION`
-- [ ] Session transition functions for start confirmation, next-landmark match, rescan and completion
-- [ ] Deterministic landmark text normalisation/matching baseline
+- [x] Product/API domain types aligned with Product API v2
+- [x] Four-landmark graph fixture aligned with checked-in examples
+- [x] Directed-edge validation: endpoint membership, no self-loop, no duplicate pair
+- [x] Reachable-destination traversal
+- [x] Deterministic unweighted BFS
+- [x] Tie-break by edge `displayOrder`, then edge ID
+- [x] Navigation-session constructor with `AWAITING_START_CONFIRMATION`
+- [x] Session transition functions for start confirmation, next-landmark match, rescan and completion
+- [x] Deterministic landmark text normalisation/matching baseline
 
 Required tests:
 
-- [ ] Reception reaches Elevator, Meeting Room and Restroom
-- [ ] Reception → Meeting Room uses the expected two edges
-- [ ] Reception → Restroom uses the expected two edges
-- [ ] Reverse travel works only where reverse edges exist
-- [ ] Unknown/unreachable destination returns `NO_ROUTE_AVAILABLE`
-- [ ] Origin equal to destination is rejected
-- [ ] Wrong or unclear origin never returns a movement cue
-- [ ] Destination match completes the session
+- [x] Reception reaches Elevator, Meeting Room and Restroom
+- [x] Reception → Meeting Room uses the expected two edges
+- [x] Reception → Restroom uses the expected two edges
+- [x] Reverse travel works only where reverse edges exist
+- [x] Unknown/unreachable destination returns `NO_ROUTE_AVAILABLE`
+- [x] Origin equal to destination is rejected
+- [x] Wrong or unclear origin never returns a movement cue
+- [x] Destination match completes the session
 
 Gate:
 
 - Domain tests pass without Express, PostgreSQL or FastAPI.
 - No AI-generated field controls pathfinding or session advancement.
+
+Verification on 2026-09-22:
+
+- 22 API/domain tests passed across 5 test files.
+- Typed demo fixture is asserted equal to the canonical published-route JSON example.
+- Root lint, all workspace typechecks and API/web builds passed.
 
 ### Phase 2 — Express Product API v2 with deterministic mock
 
