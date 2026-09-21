@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-22
 
-Current phase: `ADMIN_WEB_NEXT`
+Current phase: `MOBILE_IMPLEMENTATION_NEXT`
 
 ## Confirmed facts
 
@@ -47,13 +47,13 @@ Current phase: `ADMIN_WEB_NEXT`
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phases 0–3 complete; Phase 4 admin web next | No contract change | None |
+| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phases 0–3 complete; admin web implemented with screen-reader QA pending; mobile next | No contract change | None |
 | Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval | Not started | Must remain AI service 1.1-compatible | Needs latest handoff branch/commit |
 
 ## Next implementation gate
 
 1. Both owners pull the handoff commit and read `docs/TECHNICAL_FLOW.md`.
-2. Bảo Anh implements the keyboard- and screen-reader-operable admin review/publish flow against Product API v2.
+2. Bảo Anh implements the Expo Learn/Navigate flow against Product API v2, then completes web/mobile screen-reader QA.
 3. Hồng Phúc implements FastAPI from AI-service v1.1 using the checked-in AI examples.
 4. Each repository adds runtime validators matching its owned contract.
 5. Integrate one live perception response as soon as it validates.
@@ -65,7 +65,7 @@ Current phase: `ADMIN_WEB_NEXT`
 | Component | Owner | Local | Production | URL/identifier |
 |---|---|---|---|---|
 | Mobile | Bảo Anh | Expo SDK 57 shell; typecheck passes | Not built | TBD |
-| Web review console | Bảo Anh | React/Vite shell; build passes | Not deployed | TBD |
+| Web review console | Bảo Anh | Review/edit edges/publish/outdated UI implemented; Edge AX-tree smoke and build pass; actual screen-reader QA pending | Not deployed | TBD |
 | Express API | Bảo Anh | Product API v2 with graph/BFS/session policy, in-memory/Prisma persistence and deterministic AI mock; 32 tests pass | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Prisma schema/migration/seed and repository verified on isolated PostgreSQL; 32 total tests pass | Not provisioned | Secret; never record connection string here |
 | FastAPI AI service | Hồng Phúc | Not implemented | Not deployed | Repository and URL TBD |

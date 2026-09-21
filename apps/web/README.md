@@ -6,10 +6,20 @@ MVP web cần list/edit/reorder/delete/verify các draft đã tồn tại trong 
 
 Web chỉ gọi public Express API. Không đặt model key, database credential hoặc private service URL trong `VITE_*`.
 
-Scaffold hiện tại chạy bằng:
+Chạy local cùng Express:
 
 ```bash
 npm run dev:web
 ```
 
-Hiện chỉ có accessible placeholder shell; admin review flow chưa được implement.
+Đặt `VITE_API_URL` thành public/local Express URL. Web đã có:
+
+- mở hoặc tạo graph;
+- xem landmark evidence và trạng thái bằng text, không chỉ bằng màu;
+- edit/verify từng landmark draft;
+- tạo, xóa và chỉnh directed edge với `from`, `to`, maneuver và spoken cue rõ ràng;
+- phát lại spoken cue bằng browser speech synthesis;
+- publish graph đủ điều kiện hoặc mark published graph outdated;
+- live-region status, alert error, visible focus và responsive layout.
+
+Seeded demo graph đã published nên được hiển thị read-only. Để thử review flow, tạo graph draft rồi dùng mobile Learn flow để thêm `AI_DRAFT` landmark vào cùng route ID.

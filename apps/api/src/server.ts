@@ -6,8 +6,12 @@ import { createRuntimeRepository } from "./repositories/runtime-repository.js";
 const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const port = Number.isFinite(parsedPort) ? parsedPort : 3000;
 const runtimeRepository = createRuntimeRepository();
+const corsOrigins = (process.env.CORS_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-const server = createApp({ repository: runtimeRepository.repository }).listen(
+const server = createApp({ repository: runtimeRepository.repository, corsOrigins }).listen(
   port,
   "0.0.0.0",
   () => {

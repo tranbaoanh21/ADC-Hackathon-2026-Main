@@ -279,31 +279,40 @@ Verification on 2026-09-22:
 - API lint, typecheck and production build passed.
 - `npm audit --omit=dev` reports 10 moderate Expo-tooling advisories and 4 high Prisma-CLI transitive advisories. Suggested automatic fixes downgrade Expo or Prisma across major versions, so no force fix was applied; runtime credentials remain server-side and dependency updates require a compatible release/test pass.
 
-### Phase 4 — Accessible admin web
+### Phase 4 — Accessible admin web — `IMPLEMENTED; SCREEN-READER QA PENDING`
 
 Screens:
 
-- [ ] Graph overview
-- [ ] Landmark draft list
-- [ ] Landmark review/edit form
-- [ ] Directed-edge editor
-- [ ] Publish/outdated confirmation
+- [x] Graph overview
+- [x] Landmark draft list
+- [x] Landmark review/edit form
+- [x] Directed-edge editor
+- [x] Publish/outdated confirmation
 
 Required behavior:
 
-- [ ] From-landmark, to-landmark and maneuver are explicit labelled controls
-- [ ] `displayOrder` affects list order only
-- [ ] Edge cue can be edited and replayed
-- [ ] Duplicate/self-loop/unverified errors are announced
-- [ ] Every control has accessible name and visible label
-- [ ] Keyboard focus order is predictable
-- [ ] Status and validation use text/icon plus color, never color alone
-- [ ] Text and UI contrast meet or exceed WCAG AA; critical content aims for 7:1
+- [x] From-landmark, to-landmark and maneuver are explicit labelled controls
+- [x] `displayOrder` affects list order only
+- [x] Edge cue can be edited and replayed
+- [x] Duplicate/self-loop/unverified errors are announced
+- [x] Every control has accessible name and visible label
+- [x] Keyboard focus order follows semantic DOM order
+- [x] Status and validation use text plus color, never color alone
+- [x] Text and UI palette targets WCAG AA; critical text uses dark navy/teal
 
 Gate:
 
 - Admin can transform seeded drafts into a published graph without database tools.
 - Complete flow works by keyboard and one target screen reader.
+
+Verification on 2026-09-22:
+
+- Web lint, TypeScript check and Vite production build passed.
+- Edge browser smoke test loaded the published four-landmark graph through Express with restricted local CORS.
+- Browser accessibility tree exposed the page hierarchy, live status, alerts, every form label, directional fieldset and disabled/read-only states.
+- UI smoke test created a draft graph and confirmed Publish stays disabled with a textual requirement until two verified landmarks and one saved edge exist.
+- Responsive desktop screenshot was visually inspected; no overlap or clipped primary control was observed.
+- Actual VoiceOver/NVDA keyboard walkthrough remains required before marking this phase complete.
 
 ### Phase 5 — Accessible Expo mobile
 

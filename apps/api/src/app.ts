@@ -13,6 +13,7 @@ export interface AppDependencies {
   readonly aiAdapter?: AiAdapter;
   readonly now?: () => string;
   readonly newId?: () => string;
+  readonly corsOrigins?: readonly string[];
 }
 
 export function createApp(dependencies: AppDependencies = {}) {
@@ -22,7 +23,11 @@ export function createApp(dependencies: AppDependencies = {}) {
   const aiAdapter = dependencies.aiAdapter ?? new MockAiAdapter();
 
   app.disable("x-powered-by");
-  app.use(cors({ origin: false }));
+  app.use(
+    cors({
+      origin: dependencies.corsOrigins?.length ? [...dependencies.corsOrigins] : false,
+    }),
+  );
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_request, response) => {
