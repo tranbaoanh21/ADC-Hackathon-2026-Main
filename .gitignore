@@ -15,6 +15,7 @@
 **/*.tsbuildinfo
 **/.vite/
 **/.expo/
+apps/api/src/generated/prisma/
 
 # Python
 **/.venv/
@@ -35,4 +36,3 @@
 
 # Generated submission exports
 submission-output/
-

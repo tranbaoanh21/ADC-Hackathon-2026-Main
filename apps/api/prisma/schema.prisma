@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RouteStatus {
+  DRAFT
+  PUBLISHED
+  OUTDATED
+}
+
+enum LandmarkStatus {
+  AI_DRAFT
+  BUDDY_VERIFIED
+  PUBLISHED
+  OUTDATED
+}
+
+enum LandmarkType {
+  SIGN
+  ROOM_ENTRANCE
+  RECEPTION
+  CHECK_IN_GATE
+  ELEVATOR_AREA
+  CORRIDOR_MARKER
+  RESTROOM
+  MEETING_ROOM
+  CANTEEN
+  OTHER
+}
+
+enum RelativeManeuver {
+  GO_STRAIGHT
+  TURN_LEFT
+  TURN_RIGHT
+  TAKE_ELEVATOR
+  ENTER_DOOR
+  OTHER
+}
+
+enum SessionMode {
+  LEARN
+  NAVIGATE
+}
+
+enum SessionStatus {
+  ACTIVE
+  AWAITING_START_CONFIRMATION
+  COMPLETED
+  CANCELLED
+}
+
+model Route {
+  id          String          @id @db.Uuid
+  name        String          @db.VarChar(100)
+  status      RouteStatus
+  createdAt   DateTime        @db.Timestamptz(3)
+  publishedAt DateTime?       @db.Timestamptz(3)
+  landmarks   RouteLandmark[]
+  edges       RouteEdge[]
+  sessions    RouteSession[]
+
+  @@index([status])
+}
+
+model Landmark {
+  id               String          @id @db.Uuid
+  name             String          @db.VarChar(100)
+  type             LandmarkType
+  description      String          @db.VarChar(300)
+  visibleText      String[]
+  stableFeatures   String[]
+  routeMemberships RouteLandmark[]
+}
+
+model RouteLandmark {
+  routeId      String           @db.Uuid
+  landmarkId   String           @db.Uuid
+  displayOrder Int
+  status       LandmarkStatus
+  route        Route            @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  landmark     Landmark         @relation(fields: [landmarkId], references: [id], onDelete: Restrict)
+  outgoing     RouteEdge[]      @relation("EdgeFrom")
+  incoming     RouteEdge[]      @relation("EdgeTo")
+  reviews      LandmarkReview[]
+
+  @@id([routeId, landmarkId])
+  @@unique([routeId, landmarkId])
+  @@index([routeId, displayOrder])
+}
+
+model RouteEdge {
+  id             String           @id @db.Uuid
+  routeId        String           @db.Uuid
+  displayOrder   Int
+  fromLandmarkId String           @db.Uuid
+  toLandmarkId   String           @db.Uuid
+  maneuver       RelativeManeuver
+  spokenCue      String           @db.VarChar(300)
+  route          Route            @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  fromLandmark   RouteLandmark    @relation("EdgeFrom", fields: [routeId, fromLandmarkId], references: [routeId, landmarkId], onDelete: Cascade)
+  toLandmark     RouteLandmark    @relation("EdgeTo", fields: [routeId, toLandmarkId], references: [routeId, landmarkId], onDelete: Cascade)
+
+  @@unique([routeId, fromLandmarkId, toLandmarkId])
+  @@index([routeId, displayOrder])
+}
+
+model RouteSession {
+  id                    String        @id @db.Uuid
+  routeId               String        @db.Uuid
+  mode                  SessionMode
+  status                SessionStatus
+  currentPathIndex      Int?
+  originLandmarkId      String?       @db.Uuid
+  destinationLandmarkId String?       @db.Uuid
+  expectedLandmarkId    String?       @db.Uuid
+  plannedPath           Json?
+  startedAt             DateTime      @db.Timestamptz(3)
+  finishedAt            DateTime?     @db.Timestamptz(3)
+  route                 Route         @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  observations          Observation[]
+
+  @@index([routeId, status])
+}
+
+model Observation {
+  id         String       @id @db.Uuid
+  requestId  String       @db.VarChar(100)
+  sessionId  String       @db.Uuid
+  capturedAt DateTime     @db.Timestamptz(3)
+  perception Json
+  createdAt  DateTime     @db.Timestamptz(3)
+  session    RouteSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, requestId])
+  @@index([sessionId, capturedAt])
+}
+
+model LandmarkReview {
+  id           String         @id @default(uuid()) @db.Uuid
+  routeId      String         @db.Uuid
+  landmarkId   String         @db.Uuid
+  status       LandmarkStatus
+  reviewerRole String         @default("SYSTEM") @db.VarChar(50)
+  createdAt    DateTime       @default(now()) @db.Timestamptz(3)
+  membership   RouteLandmark  @relation(fields: [routeId, landmarkId], references: [routeId, landmarkId], onDelete: Cascade)
+
+  @@index([routeId, landmarkId, createdAt])
+}

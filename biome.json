@@ -6,6 +6,7 @@
       "!**/node_modules",
       "!**/dist",
       "!**/coverage",
+      "!apps/api/src/generated/prisma",
       "!ADC-main-submission-template",
       "!contracts/examples"
     ]

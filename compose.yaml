@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pathmemory
+      POSTGRES_USER: pathmemory
+      POSTGRES_PASSWORD: pathmemory_local_only
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pathmemory -d pathmemory"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    volumes:
+      - pathmemory-postgres:/var/lib/postgresql/data
+
+volumes:
+  pathmemory-postgres:

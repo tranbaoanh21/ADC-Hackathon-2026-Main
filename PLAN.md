@@ -240,34 +240,44 @@ Verification on 2026-09-22:
 - Uploaded frame buffers remain request-local and are never written to the repository.
 - API lint, typecheck and production build passed.
 
-### Phase 3 — PostgreSQL and Prisma persistence
+### Phase 3 — PostgreSQL and Prisma persistence — `COMPLETE`
 
 Entities:
 
-- [ ] `Route`
-- [ ] `Landmark`
-- [ ] `RouteLandmark`
-- [ ] `RouteEdge`
-- [ ] `RouteSession`
-- [ ] `Observation`
-- [ ] `LandmarkReview`
+- [x] `Route`
+- [x] `Landmark`
+- [x] `RouteLandmark`
+- [x] `RouteEdge`
+- [x] `RouteSession`
+- [x] `Observation`
+- [x] `LandmarkReview`
 
 Constraints and behavior:
 
-- [ ] Unique `(routeId, landmarkId)` graph membership
-- [ ] Unique `(routeId, fromLandmarkId, toLandmarkId)` directed pair
-- [ ] No self-loop through application validation and database constraint where practical
-- [ ] Transactional graph publication
-- [ ] Published graph requires verified landmarks and valid edges
-- [ ] No raw images or audio columns
-- [ ] Seed only the deterministic four-landmark demo fixture
-- [ ] Production migration command uses `prisma migrate deploy`
+- [x] Unique `(routeId, landmarkId)` graph membership
+- [x] Unique `(routeId, fromLandmarkId, toLandmarkId)` directed pair
+- [x] No self-loop through application validation and database constraint
+- [x] Transactional graph writes/publication
+- [x] Published graph requires verified landmarks and valid edges
+- [x] No raw images or audio columns
+- [x] Seed only the deterministic four-landmark demo fixture
+- [x] Production migration command uses `prisma migrate deploy`
 
 Gate:
 
 - API integration tests can run against PostgreSQL.
 - Migration and seed are reproducible without deleting existing production data.
 - History/session state survives API restart.
+
+Verification on 2026-09-22:
+
+- Prisma 7.10 schema and initial PostgreSQL migration validate successfully.
+- Migration deploy and deterministic seed passed against an isolated PostgreSQL 18.4 test cluster.
+- 32 tests passed across 7 files, including PostgreSQL persistence, API-through-Prisma and transaction rollback coverage.
+- Graph, session and structured observation data survived Prisma client restart; uploaded frame bytes have no database column.
+- Runtime selects `memory` or `postgres` explicitly through `PERSISTENCE_MODE`; production PostgreSQL requires `DATABASE_URL`.
+- API lint, typecheck and production build passed.
+- `npm audit --omit=dev` reports 10 moderate Expo-tooling advisories and 4 high Prisma-CLI transitive advisories. Suggested automatic fixes downgrade Expo or Prisma across major versions, so no force fix was applied; runtime credentials remain server-side and dependency updates require a compatible release/test pass.
 
 ### Phase 4 — Accessible admin web
 

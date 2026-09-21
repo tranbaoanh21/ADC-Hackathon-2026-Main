@@ -11,7 +11,7 @@ Scope landmark graph và Product API v2 đã chốt. Trước khi scaffold, đ�
 
 Vertical slice đầu tiên phải dùng deterministic AI mock và graph fixture bốn landmark có một nhánh. Express sở hữu database write, review/publish, directed `RouteEdge`, reachable-destination filtering, deterministic BFS, start-landmark confirmation, session state và `STOP_AND_RESCAN`. FastAPI chỉ cung cấp perception theo AI-service v1.1; không route, query database hoặc quyết định advance.
 
-Scaffold hiện tại:
+Chạy nhanh với in-memory persistence và deterministic AI mock:
 
 ```bash
 npm install
@@ -19,4 +19,26 @@ npm run dev:api
 npm run test --workspace @pathmemory/api
 ```
 
-`GET /health` đã được implement và không gọi PostgreSQL/FastAPI. Product endpoints, graph kernel, repositories và AI adapter thuộc các phase tiếp theo trong `PLAN.md`.
+Chạy với PostgreSQL local:
+
+```bash
+docker compose up -d postgres
+cp apps/api/.env.example apps/api/.env
+```
+
+Trong `apps/api/.env`, đặt:
+
+```dotenv
+PERSISTENCE_MODE=postgres
+DATABASE_URL=postgresql://pathmemory:pathmemory_local_only@127.0.0.1:5432/pathmemory?schema=public
+```
+
+Sau đó:
+
+```bash
+npm run db:migrate:deploy --workspace @pathmemory/api
+npm run db:seed --workspace @pathmemory/api
+npm run dev:api
+```
+
+`GET /health` không gọi PostgreSQL hoặc FastAPI. Product API v2, graph kernel, in-memory/Prisma repositories và deterministic AI mock đã được implement. Raw frame bytes chỉ tồn tại trong request memory và không có cột lưu trong database.

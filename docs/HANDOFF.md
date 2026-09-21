@@ -1,10 +1,10 @@
 # Team Handoff
 
-Current state: Stage 4 landmark-graph scope and versioned contracts are ready for parallel implementation. The application workspace and Product API v2 mock vertical slice are implemented; PostgreSQL and product UIs are next. FastAPI implementation remains owned by Hồng Phúc.
+Current state: Stage 4 landmark-graph scope and versioned contracts are ready for parallel implementation. The Product API v2 mock vertical slice and Prisma/PostgreSQL persistence are implemented; product UIs are next. FastAPI implementation remains owned by Hồng Phúc.
 
 Application execution is tracked in root `PLAN.md` on branch `codex/application-vertical-slice`. Bảo Anh's implementation order is deterministic domain/API mock first, then PostgreSQL, admin web, mobile and live FastAPI integration. Hồng Phúc's AI-service boundary remains unchanged.
 
-Application progress on 2026-09-22: workspace shells, the pure TypeScript graph/BFS/navigation-session kernel, every Product API v2 endpoint, in-memory repositories and the deterministic AI mock are implemented and tested. Both demo routes and the Day-1 draft/review/publish flow pass Supertest integration tests. This progress does not change either shared OpenAPI contract.
+Application progress on 2026-09-22: workspace shells, the graph/BFS/session kernel, every Product API v2 endpoint, in-memory/Prisma repositories, initial migration, deterministic seed and AI mock are implemented and tested. Both demo routes and the Day-1 draft/review/publish flow pass Supertest; Product API persistence is also verified against isolated PostgreSQL. This progress does not change either shared OpenAPI contract.
 
 ## Current integration boundary
 
@@ -14,7 +14,7 @@ Application progress on 2026-09-22: workspace shells, the pure TypeScript graph/
 - Technical flow: `docs/TECHNICAL_FLOW.md`
 - Express Product API v2: implemented and tested against in-memory repositories
 - Mock/live providers: deterministic mock implemented; live FastAPI adapter pending
-- Database schema: entities/constraints planned; Prisma migration is the next application milestone
+- Database schema: Prisma 7.10 schema, migration, constraints, seed and runtime adapter implemented and verified
 - Deployment: not started
 
 ## Latest context handoff
@@ -57,7 +57,7 @@ Not validated yet:
 - FastAPI repository URL/path remains TBD.
 
 Next exact action for Bảo Anh:
-- Implement the Prisma/PostgreSQL repository and reproducible migration without changing Product API v2 behavior; keep the in-memory repository for fast deterministic tests.
+- Implement the minimal accessible React admin review/publish flow against Product API v2, keeping graph direction and human verification explicit.
 
 Next exact action for Hồng Phúc:
 - Pull this branch/commit; implement POST /internal/v1/perception from AI-service v1.1 and ai-* examples; record the AI repository URL/path and commit here.
