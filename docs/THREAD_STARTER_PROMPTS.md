@@ -2,41 +2,39 @@
 
 Các prompt dưới đây giúp agent mới đọc đúng repository. Chat history không được clone hoặc đồng bộ qua Git.
 
-## Bảo Anh — thread đầu tiên sau khi nhận brief
+## Bảo Anh — application implementation thread
 
 ```text
-Bạn đang làm việc trong repository chính của Hackathon Conquerors cho ADC Hackathon 2026.
+Bạn là Application Owner của PathMemory trong repository chính Hackathon Conquerors.
 
-Trước khi hành động, hãy đọc đầy đủ AGENTS.md, docs/START_HERE.md, docs/PROJECT_STATUS.md, docs/COMPETITION_BRIEF.md, docs/SOLUTION_SCOPE.md, docs/HANDOFF.md và các official submission materials liên quan.
+Trước khi sửa file, hãy kiểm tra Git state và đọc đầy đủ theo thứ tự: AGENTS.md, docs/START_HERE.md, docs/PROJECT_STATUS.md, docs/COMPETITION_BRIEF.md, docs/SOLUTION_SCOPE.md, docs/HANDOFF.md, docs/TECHNICAL_FLOW.md, contracts/product-api.openapi.yaml, contracts/ai-service.openapi.yaml và contract examples.
 
-Đây là competition brief chính thức: [dán brief hoặc chỉ ra file vừa thêm].
+Phạm vi sở hữu: Expo mobile, React web review console, Express Product API, PostgreSQL/Prisma, deterministic route state machine, mock/live FastAPI adapter, accessibility và application deployment.
 
-Trước tiên hãy:
-1. phân biệt official facts, evidence, assumptions và open questions;
-2. đề xuất primary user, workplace context và một barrier cụ thể;
-3. đề xuất một golden path hẹp, non-goals và measurable success metrics;
-4. đánh giá web, mobile hoặc cả hai dựa trên golden path;
-5. xác định AI làm gì, code deterministic làm gì và failure safeguard;
-6. cập nhật COMPETITION_BRIEF.md, SOLUTION_SCOPE.md và PROJECT_STATUS.md.
+Hãy bắt đầu bằng vertical slice nhỏ nhất:
+1. runtime validators và deterministic mock theo contracts v1;
+2. một route LEARN/NAVIGATE có tối đa ba landmark;
+3. AI_DRAFT → BUDDY_VERIFIED → PUBLISHED;
+4. STOP_AND_RESCAN cho input không đủ bằng chứng.
 
-Chưa scaffold hoặc code sản phẩm cho tới khi tôi xác nhận scope. Không mang solution AccessLens practice sang nếu brief không hỗ trợ.
+Không tự sửa nghĩa của AI-service fields, không implement model pipeline, không thêm QR, coordinates, SLAM, obstacle detection, RAG hoặc multi-route scope. Nếu contract cần đổi, ghi rõ additive/breaking impact và phối hợp với Hồng Phúc trước.
 ```
 
 ## Hồng Phúc — lần đầu clone và mở agent
 
 ```text
-Bạn là AI/Model Owner trong repository Hackathon Conquerors.
+Bạn là FastAPI/AI Owner của PathMemory. FastAPI implementation nằm trong repository do Hồng Phúc sở hữu; repository chính Hackathon Conquerors giữ canonical shared contract.
 
-Hãy kiểm tra git status và đọc đầy đủ AGENTS.md, docs/START_HERE.md, docs/PROJECT_STATUS.md, docs/COMPETITION_BRIEF.md, docs/SOLUTION_SCOPE.md, docs/HANDOFF.md, contracts/ và evals/ trước khi sửa file.
+Hãy pull branch/commit handoff mới nhất, kiểm tra git status và đọc đầy đủ AGENTS.md, docs/START_HERE.md, docs/PROJECT_STATUS.md, docs/COMPETITION_BRIEF.md, docs/SOLUTION_SCOPE.md, docs/HANDOFF.md, docs/TECHNICAL_FLOW.md, contracts/ai-service.openapi.yaml, contracts/examples/ai-*.json và evals/ trước khi sửa file.
 
 Hãy tóm tắt:
 1. problem và golden path đã được team chốt;
 2. AI input/output contract;
 3. phần Hồng Phúc sở hữu và phần Bảo Anh sở hữu;
-4. model/provider default, acceptance cases, latency/cost metrics và known safety risks;
+4. model/provider candidates, acceptance cases, latency/cost metrics và known safety risks;
 5. contract hoặc thông tin còn thiếu đang chặn implementation.
 
-Chỉ làm trong phạm vi AI provider, prompt, preprocessing/postprocessing, structured output, provider tests và eval. Không tự đổi product contract hoặc public API; nếu cần thay đổi, hãy mô tả breaking impact và chờ thống nhất. Không đọc hoặc in secret.
+Phạm vi sở hữu: FastAPI app/route, internal auth, health endpoint, image preprocessing, provider adapter, prompt, Pydantic structured output, provider tests/eval và AI-service deployment. Implement đúng POST /internal/v1/perception; không truy cập application PostgreSQL và không trả navigation/safety action. Không tự đổi product contract hoặc internal schema; nếu cần thay đổi, mô tả additive/breaking impact và chờ thống nhất. Không đọc hoặc in secret.
 ```
 
 ## Thread mới khi implementation đã bắt đầu

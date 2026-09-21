@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "AI_TIMEOUT",
+    "message": "The landmark could not be analysed in time. Stop and rescan.",
+    "retryable": true,
+    "requestId": "mobile-obs-002",
+    "details": []
+  }
+}

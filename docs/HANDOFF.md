@@ -1,99 +1,86 @@
 # Team Handoff
 
-Current state: no active implementation handoff. The Visual Impairment competition brief has been received and classified, but solution discussion and stage selection are intentionally on hold.
-
-This file records only the latest information another person or agent needs to continue work. Permanent decisions belong in the brief, scope, contracts or code documentation.
+Current state: Stage 4 unique-landmark route scope is confirmed and initial v1 contracts are ready for parallel implementation. No application or FastAPI runtime has been implemented yet.
 
 ## Current integration boundary
 
-- Product contract: not created
-- AI-service contract: not created
-- Mock response: not created
+- Product contract: `contracts/product-api.openapi.yaml`
+- AI-service contract: `contracts/ai-service.openapi.yaml`
+- Examples: `contracts/examples/`
+- Technical flow: `docs/TECHNICAL_FLOW.md`
+- Mock provider: contract defined, implementation pending
 - Live provider: not integrated
-- Database schema: not created
+- Database schema: entities planned, migration not created
 - Deployment: not started
 
 ## Latest context handoff
 
 ```text
 Date/time: 2026-09-21
-From: Bảo Anh / context-analysis thread
-To: Hackathon Conquerors team and future agent threads
-Branch/commit: docs/brief-source-gate / uncommitted
-Task objective: Import and classify the main Visual Impairment competition brief without selecting a solution.
+From: Bảo Anh / product-scope thread
+To: Bảo Anh, Hồng Phúc and both coding-agent threads
+Branch/commit: codex/pathmemory-scope-contracts / commit pending
+Task objective: Lock the Stage 4 unique-landmark MVP, split repository ownership and create versioned Product/AI contracts.
 
-Completed:
-- Recorded source provenance and the lived-experience plus HR/industry perspectives.
-- Classified barriers across all six career stages.
-- Separated official/qualitative evidence from measured evidence, assumptions and claims requiring validation.
-- Recorded cross-stage themes and Day 2 clarification questions.
+Confirmed product:
+- Day 1: blind/low-vision employee explores one route with a human buddy; AI proposes structured context for at most three useful unique landmarks.
+- Express validates/deduplicates and stores AI_DRAFT records; AI never writes the database directly.
+- Human admin/buddy edits, verifies and publishes the route on an accessible web console.
+- Day 2 onward: mobile replays the published route using ordered landmarks and relative cues.
+- No exact coordinates, QR, SLAM, obstacle avoidance, RAG, raw image retention or general safety-navigation claim.
+
+Ownership:
+- Bảo Anh: Expo mobile, React web, Express, PostgreSQL/Prisma, public API, route state machine, mock/live AI adapter, accessibility and application deployment.
+- Hồng Phúc: FastAPI repository/runtime, provider adapter, preprocessing, prompt, structured perception, Pydantic validation, AI eval and AI-service deployment.
+- Shared: AI-service contract semantics, examples, integration tests and breaking changes.
 
 Files changed:
-- docs/COMPETITION_BRIEF.md
-- docs/UNIVERSAL_DESIGN.md
-- docs/README.md
-- docs/START_HERE.md
-- docs/PROJECT_STATUS.md
+- AGENTS.md
+- README.md
 - docs/SOLUTION_SCOPE.md
+- docs/PROJECT_STATUS.md
+- docs/TECHNICAL_FLOW.md
+- docs/THREAD_STARTER_PROMPTS.md
 - docs/HANDOFF.md
+- contracts/*.openapi.yaml
+- contracts/examples/*.json
+- related README files
 
 Contract impact:
-- None
-- Consumer action required: do not create contracts or implementation tasks until the team confirms a solution scope.
+- Initial v1 Product API and AI-service contracts; no previous runtime consumer exists.
+- Both implementations must use the checked-in examples and stable error envelope.
 
-Validation run:
-- Documentation diff and whitespace checks only.
+Not validated yet:
+- No end-user validation, AI eval, accessibility test, latency measurement or end-to-end runtime exists.
+- FastAPI repository URL/path remains TBD.
 
-Not validated:
-- No end-user statements beyond the supplied brief have been collected.
-- No product, AI, accessibility or feasibility hypothesis has been tested.
+Next exact action for Bảo Anh:
+- Build Express validators and a deterministic mock adapter from the contracts, then one mobile three-landmark vertical slice.
 
-Known limitations or failure cases:
-- Several platform, AI-bias, cost, security and employment-outcome statements are brief-reported claims rather than team measurements.
-
-Next exact action:
-- Review and confirm the competition-context summary before beginning solution-stage discussion.
+Next exact action for Hồng Phúc:
+- Pull this branch/commit, implement POST /internal/v1/perception in the FastAPI repository, validate the example response and record the AI repository URL/path here.
 ```
 
-## Handoff template
+## Contract change rule
 
-Replace or append a concise entry when handing work to another owner:
+Before changing `contracts/ai-service.openapi.yaml`, state:
 
 ```text
-Date/time:
-From:
-To:
-Branch/commit:
-Task objective:
-
-Completed:
-- ...
-
-Files changed:
-- ...
-
-Contract impact:
-- None / compatible / breaking
-- Consumer action required: ...
-
-Validation run:
-- command: result
-
-Not validated:
-- ...
-
-Known limitations or failure cases:
-- ...
-
-Next exact action:
-- ...
+Field/endpoint being changed
+Reason
+Additive or breaking
+Express consumer impact
+FastAPI producer impact
+Example/test updates
 ```
+
+Do not merge a breaking change until both owners have compatible implementations or an agreed version transition.
 
 ## Handoff rules
 
-- Reference a branch or commit; do not say only “code mới nhất”.
+- Reference a branch and commit; do not say only “code mới nhất”.
 - State contract impact explicitly.
 - Do not report a live-model test as passed without model ID, test input class and result.
-- Do not paste token, `.env`, database URL or private payload.
+- Do not paste token, `.env`, database URL, private frame or unique submission link.
+- When Hồng Phúc creates/uses a separate AI repository, record its URL/path and commit in this file.
 - If a task is merged, update `docs/PROJECT_STATUS.md` in the same PR or immediately after merge.
-- If the next person must make a product decision, list the options and evidence; do not silently choose on their behalf.

@@ -1,0 +1,41 @@
+{
+  "id": "7fbd42a3-356f-4ad7-b3f5-68b79a1154b7",
+  "name": "Reception to Meeting Room A",
+  "originLabel": "Reception",
+  "destinationLabel": "Meeting Room A",
+  "status": "PUBLISHED",
+  "landmarks": [
+    {
+      "id": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+      "sequenceIndex": 0,
+      "name": "Reception",
+      "spokenCue": "Bắt đầu tại biển Reception. Landmark tiếp theo là thang máy tầng 2.",
+      "description": "Biển RECEPTION tại quầy lễ tân.",
+      "visibleText": ["RECEPTION"],
+      "stableFeatures": ["Reception sign above the front desk"],
+      "status": "PUBLISHED"
+    },
+    {
+      "id": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
+      "sequenceIndex": 1,
+      "name": "Elevator Level 2",
+      "spokenCue": "Đã đến thang máy tầng 2. Landmark tiếp theo là Meeting Room A.",
+      "description": "Biển LEVEL 2 cạnh cửa thang máy.",
+      "visibleText": ["LEVEL 2"],
+      "stableFeatures": ["Level 2 sign beside the elevator"],
+      "status": "PUBLISHED"
+    },
+    {
+      "id": "ffb52187-b769-4a0f-96b3-456292839602",
+      "sequenceIndex": 2,
+      "name": "Meeting Room A",
+      "spokenCue": "Đã đến Meeting Room A.",
+      "description": "Biển MEETING ROOM A cạnh cửa phòng.",
+      "visibleText": ["MEETING ROOM A"],
+      "stableFeatures": ["Meeting Room A sign beside the entrance"],
+      "status": "PUBLISHED"
+    }
+  ],
+  "createdAt": "2026-09-21T09:00:00+07:00",
+  "publishedAt": "2026-09-21T09:30:00+07:00"
+}

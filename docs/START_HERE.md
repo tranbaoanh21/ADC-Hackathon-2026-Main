@@ -18,8 +18,9 @@ Repository là shared context. Chat history giữa Bảo Anh, Hồng Phúc và c
 4. `docs/UNIVERSAL_DESIGN.md` — design principles và accessibility review questions.
 5. `docs/SOLUTION_SCOPE.md` — product decisions, golden path, MVP và non-goals.
 6. `docs/HANDOFF.md` — thay đổi mới nhất, contract impact và việc tiếp theo.
-7. `contracts/` — interface đã thống nhất.
-8. README và tests trong phần code sẽ sửa.
+7. `docs/TECHNICAL_FLOW.md` — trách nhiệm các tầng và day-one/day-two request flow.
+8. `contracts/` — interface đã thống nhất.
+9. README và tests trong phần code sẽ sửa.
 
 Chỉ đọc `docs/diagrams/README.md` khi task liên quan đến architecture/request-flow diagram.
 
@@ -39,7 +40,7 @@ Sau khi đọc context và xác nhận scope, tạo branch riêng:
 git switch -c feat/<scope-ngan-gon>
 ```
 
-Không tạo branch implementation nếu `docs/SOLUTION_SCOPE.md` vẫn là `UNDECIDED`, trừ branch chỉ dùng để cập nhật brief, research hoặc contracts.
+Không tạo branch implementation nếu `docs/SOLUTION_SCOPE.md` vẫn là `UNDECIDED`, trừ branch chỉ dùng để cập nhật brief, research hoặc contracts. Scope Stage 4 hiện đã được xác nhận; implementation phải tuân thủ contracts v1 và non-goals đã ghi.
 
 ## New thread boot sequence
 
@@ -66,6 +67,8 @@ Không bắt đầu implementation chính cho tới khi có tối thiểu:
 - primary client decision;
 - success request/response/error examples;
 - owner cho application và AI tracks.
+
+Gate này đã pass cho unique-landmark MVP. Điều đó không biến assumption thành evidence: end-user validation, AI eval, accessibility test và latency/reliability measurement vẫn đang pending.
 
 ## Source-of-truth rule
 

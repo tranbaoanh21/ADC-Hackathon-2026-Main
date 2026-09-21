@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "requestId": "mobile-obs-002",
+  "frameQuality": "USABLE",
+  "detectedText": ["LEVEL 2"],
+  "sceneType": "ELEVATOR_AREA",
+  "landmarkCandidates": [
+    {
+      "proposedName": "Elevator Level 2",
+      "type": "ELEVATOR_AREA",
+      "visibleText": ["LEVEL 2"],
+      "stableFeatures": ["Level 2 sign beside the elevator"],
+      "draftDescription": "Khu vực thang máy có biển LEVEL 2.",
+      "transientFeatures": ["One person passing through the frame"]
+    }
+  ],
+  "uncertaintyReasons": [],
+  "model": {
+    "provider": "gemini",
+    "modelId": "TBD_AFTER_EVAL",
+    "promptVersion": "landmark-perception-v1"
+  },
+  "processingTimeMs": 1840
+}

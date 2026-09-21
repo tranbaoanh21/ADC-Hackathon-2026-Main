@@ -2,85 +2,75 @@
 
 Last updated: 2026-09-21
 
-Current phase: `BRIEF_RECEIVED_SCOPE_NOT_SELECTED`
+Current phase: `SCOPE_CONFIRMED_CONTRACTS_READY_FOR_IMPLEMENTATION`
 
 ## Confirmed facts
 
-- Team: Hackathon Conquerors
-- Focus area: Visual Impairment — Blind or Low Vision
-- Competition brief release: Day 1, 21 September 2026, 09:00–10:00
-- Final submission deadline: Day 3, 23 September 2026, 07:00
-- Main repository: `ADC-Hackathon-2026-Main`
-- Official template and submission guides are stored in `ADC-main-submission-template/`
-- The barrier-specific Visual Impairment competition brief was supplied by Bảo Anh as pasted bilingual text on 2026-09-21.
-- The brief was developed from lived-experience and HR/industry perspectives and covers six career stages from career preparation through advancement.
-- The brief has been classified in `docs/COMPETITION_BRIEF.md`; no stage or product scope has been selected.
+- Team: Hackathon Conquerors.
+- Focus area: Visual Impairment — Blind or Low Vision.
+- Selected stage: Stage 4 — workplace onboarding.
+- Final submission deadline: Day 3, 23 September 2026, 07:00.
+- Official template and submission guides are stored in `ADC-main-submission-template/`.
+- The official brief reports that locating workplace facilities can require more time and guided support.
+- The brief also states that digital access is the more critical Stage 4 barrier; the physical-orientation MVP is a deliberate narrow team decision that still requires end-user validation.
 
-## Working defaults, not brief-specific decisions
+## Locked product decisions
 
-- React/Vite for web if web is the primary client.
-- Expo/React Native if camera or mobile context is essential.
-- Express owns public product API, validation, business logic and PostgreSQL.
-- FastAPI is an internal AI service only when a separate Python boundary is useful.
-- Google Gemini API is the default hosted model provider unless brief-specific evaluation supports another choice.
-- Web deployment: Vercel.
-- Express, FastAPI and PostgreSQL deployment: Railway.
-- Authentication is omitted unless identity or authorization is necessary for the golden path.
+- Working name: `PathMemory`.
+- Primary user: blind or low-vision new employee.
+- Primary client: Expo mobile with chest-mounted camera and accessible audio interaction.
+- Secondary client: small React web console for a human admin/buddy to review and publish landmark routes.
+- Golden path: learn one route on Day 1, verify at most three unique landmarks, then replay the published ordered route from Day 2 onward.
+- Spatial model: topological order and relative cues only; no exact coordinates.
+- AI boundary: perception and draft extraction only; Express owns deterministic route state and persistence.
+- Raw image/video retention: none by default.
+- QR, SLAM, obstacle detection, RAG and multi-route navigation are out of MVP scope.
 
-These are defaults. Update `docs/SOLUTION_SCOPE.md` when the brief confirms or rejects them.
+## Repository and ownership boundary
 
-## Not decided yet
-
-- Product name and exact problem
-- Primary user and workplace moment
-- Golden path
-- Web, mobile or both
-- AI task and structured output
-- Database persistence requirement
-- API contracts
-- Eval dataset and metric targets
-- Final architecture and PlantUML diagrams
+- Bảo Anh owns this application repository's mobile, web, Express, PostgreSQL, mock AI adapter and end-to-end integration.
+- Hồng Phúc owns the FastAPI runtime/repository, model adapter, prompt, preprocessing, structured output and AI eval.
+- This repository's `contracts/ai-service.openapi.yaml` is the canonical Express ↔ FastAPI contract.
+- The FastAPI repository URL/path is `TBD` and must be added to `docs/HANDOFF.md` when Hồng Phúc provides it.
 
 ## Current active work
 
-| Owner | Branch | Task | Status | Contract impact | Blocker |
+| Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `docs/brief-source-gate` | Import and classify the Visual Impairment competition brief without selecting a solution | Ready for review | None | Awaiting confirmation that the repository summary accurately reflects the supplied brief |
+| Bảo Anh | `codex/pathmemory-scope-contracts` | Lock product scope and shared contracts | Ready for implementation handoff | Initial v1 contracts | None after commit/push |
+| Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval against v1 contract | Not started | Must remain v1-compatible | Needs branch/commit and contract handoff |
 
-Update this table when work starts, changes owner or merges. Remove completed rows after recording the result in the relevant source-of-truth file or handoff entry.
+## Next implementation gate
 
-## Next gate
-
-After the brief-context summary is confirmed:
-
-1. Discuss the six stages without treating any option as preselected.
-2. Use brief evidence and Day 2 questions to choose one primary user, workplace context and barrier.
-3. Propose one narrow golden path, non-goals, measurable hypotheses, client choice and AI/code boundary.
-4. Obtain explicit team confirmation before changing `docs/SOLUTION_SCOPE.md` from `UNDECIDED`.
-5. Create product and AI contract examples only after scope confirmation.
-6. Assign implementation branches and scaffold only the services required by the confirmed golden path.
+1. Both owners pull the scope/contract commit and read `docs/TECHNICAL_FLOW.md`.
+2. Bảo Anh implements the Express mock adapter and public Product API from `contracts/product-api.openapi.yaml`.
+3. Hồng Phúc implements FastAPI from `contracts/ai-service.openapi.yaml` using fixed example payloads.
+4. Each repository adds runtime validators matching the shared schemas.
+5. Integrate one live perception response as soon as it validates; do not wait for the full AI eval.
+6. Build one three-landmark vertical slice before adding web polish or additional sensing.
+7. Test uncertainty, timeout, stale response, accessibility and two consecutive golden-path runs.
 
 ## Runtime and deployment status
 
-| Component | Local | Production | URL/identifier |
-|---|---|---|---|
-| Web | Not scaffolded | Not deployed | TBD |
-| Mobile | Not scaffolded | Not built | TBD |
-| Express API | Not scaffolded | Not deployed | TBD |
-| PostgreSQL | Not configured | Not provisioned | Secret; never record connection string here |
-| FastAPI AI service | Not scaffolded | Not deployed | TBD |
-| Gemini | Not integrated | Not verified | Model ID TBD; never record API key here |
+| Component | Owner | Local | Production | URL/identifier |
+|---|---|---|---|---|
+| Mobile | Bảo Anh | Not scaffolded | Not built | TBD |
+| Web review console | Bảo Anh | Not scaffolded | Not deployed | TBD |
+| Express API | Bảo Anh | Not scaffolded | Not deployed | TBD |
+| PostgreSQL | Bảo Anh | Not configured | Not provisioned | Secret; never record connection string here |
+| FastAPI AI service | Hồng Phúc | Not implemented | Not deployed | Repository and URL TBD |
+| Hosted vision model | Hồng Phúc | Not integrated | Not verified | Model ID TBD; never record API key here |
 
 ## Evidence status
 
 | Evidence | Status |
 |---|---|
-| Barrier-specific official brief | Received and classified; context summary awaiting review |
-| End-user insight | Pending Day 2 session |
-| Working golden path | Not started |
+| Barrier-specific official brief | Received and classified |
+| Product scope | Confirmed by team in current thread |
+| End-user validation of physical-route priority | Pending Day 2 session |
+| Product and AI contracts | Initial v1 documented |
+| Working golden path | Not implemented |
 | AI evaluation | Not started |
 | Accessibility verification | Not started |
-| Latency and reliability | Not measured |
-| Cost estimate | Not calculated |
-| Architecture diagram | Not created |
+| Latency/reliability/cost | Not measured |
 | Submission deck/video | Official template available; content not started |

@@ -1,0 +1,611 @@
+openapi: 3.1.0
+info:
+  title: PathMemory Product API
+  version: 1.0.0
+  description: >-
+    Public API owned by the Express application backend. Mobile and web call
+    this API only. AI perception is internal and never exposed directly to a
+    client.
+servers:
+  - url: https://api.example.invalid
+    description: Placeholder only; replace through environment configuration.
+tags:
+  - name: Routes
+  - name: Sessions
+  - name: Review
+paths:
+  /api/v1/routes:
+    post:
+      tags: [Routes]
+      summary: Create one draft onboarding route
+      operationId: createRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRouteRequest'
+      responses:
+        '201':
+          description: Draft route created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/routes/{routeId}:
+    parameters:
+      - $ref: '#/components/parameters/RouteId'
+    get:
+      tags: [Routes]
+      summary: Get a route and its ordered landmarks
+      operationId: getRoute
+      responses:
+        '200':
+          description: Route returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/routes/{routeId}/sessions:
+    parameters:
+      - $ref: '#/components/parameters/RouteId'
+    post:
+      tags: [Sessions]
+      summary: Start a learn or navigate session
+      operationId: startRouteSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSessionRequest'
+      responses:
+        '201':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteSession'
+        '409':
+          description: Route state does not allow the requested mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/sessions/{sessionId}/observations:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [Sessions]
+      summary: Analyse sampled frames and return product-safe narration/state
+      description: >-
+        Express forwards ephemeral image bytes to the internal AI service,
+        validates perception, applies deterministic route policy and does not
+        persist raw media.
+      operationId: createObservation
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [clientRequestId, capturedAt, frames]
+              properties:
+                clientRequestId:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Client-generated ID used to reject stale/duplicate responses.
+                capturedAt:
+                  type: string
+                  format: date-time
+                frames:
+                  type: array
+                  minItems: 1
+                  maxItems: 3
+                  items:
+                    type: string
+                    format: binary
+                sensorEvidence:
+                  $ref: '#/components/schemas/SensorEvidence'
+            encoding:
+              frames:
+                contentType: image/jpeg, image/png
+              sensorEvidence:
+                contentType: application/json
+      responses:
+        '200':
+          description: Product-safe observation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservationProductResponse'
+              examples:
+                success:
+                  externalValue: ./examples/product-observation-success.json
+        '413':
+          description: Frame count or payload exceeds configured limits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/AiUnavailable'
+        '504':
+          $ref: '#/components/responses/AiTimeout'
+  /api/v1/sessions/{sessionId}/landmarks:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [Sessions]
+      summary: Save a useful unique candidate as an AI draft landmark
+      operationId: saveLandmarkDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveLandmarkDraftRequest'
+      responses:
+        '201':
+          description: Draft landmark saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Landmark'
+        '409':
+          description: Route already has three landmarks or candidate is a deterministic duplicate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/sessions/{sessionId}/finish:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [Sessions]
+      summary: Finish a learn or navigate session
+      operationId: finishSession
+      responses:
+        '200':
+          description: Session finished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteSession'
+        '409':
+          description: Session cannot be finished in its current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/routes/{routeId}/landmarks/{landmarkId}:
+    parameters:
+      - $ref: '#/components/parameters/RouteId'
+      - $ref: '#/components/parameters/LandmarkId'
+    patch:
+      tags: [Review]
+      summary: Edit and verify a landmark draft as a human admin/buddy
+      operationId: reviewLandmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewLandmarkRequest'
+      responses:
+        '200':
+          description: Landmark updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Landmark'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/routes/{routeId}/publish:
+    parameters:
+      - $ref: '#/components/parameters/RouteId'
+    post:
+      tags: [Review]
+      summary: Publish a fully human-verified route
+      operationId: publishRoute
+      responses:
+        '200':
+          description: Route published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        '409':
+          description: Route has fewer than two landmarks, more than three, or unverified landmarks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/routes/{routeId}/mark-outdated:
+    parameters:
+      - $ref: '#/components/parameters/RouteId'
+    post:
+      tags: [Review]
+      summary: Prevent further replay until a human revalidates the route
+      operationId: markRouteOutdated
+      responses:
+        '200':
+          description: Route marked outdated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+components:
+  parameters:
+    RouteId:
+      name: routeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LandmarkId:
+      name: landmarkId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validation:
+              externalValue: ./examples/product-validation-error.json
+    NotFound:
+      description: Requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    AiUnavailable:
+      description: Internal AI service or provider is unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    AiTimeout:
+      description: AI path exceeded the Express timeout
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            timeout:
+              externalValue: ./examples/product-provider-timeout.json
+  schemas:
+    CreateRouteRequest:
+      type: object
+      additionalProperties: false
+      required: [name, originLabel, destinationLabel]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        originLabel:
+          type: string
+          minLength: 1
+          maxLength: 100
+        destinationLabel:
+          type: string
+          minLength: 1
+          maxLength: 100
+        locale:
+          type: string
+          default: vi-VN
+          maxLength: 20
+    StartSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [LEARN, NAVIGATE]
+    SaveLandmarkDraftRequest:
+      type: object
+      additionalProperties: false
+      required: [sourceObservationIds]
+      properties:
+        sourceObservationIds:
+          type: array
+          minItems: 1
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        preferredName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Optional user/buddy correction; AI output remains a draft.
+    ReviewLandmarkRequest:
+      type: object
+      additionalProperties: false
+      required: [name, spokenCue, sequenceIndex, reviewStatus]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 300
+        spokenCue:
+          type: string
+          minLength: 1
+          maxLength: 300
+        sequenceIndex:
+          type: integer
+          minimum: 0
+          maximum: 2
+        reviewStatus:
+          type: string
+          enum: [AI_DRAFT, BUDDY_VERIFIED]
+    SensorEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        headingDeltaDegrees:
+          type: number
+          minimum: -360
+          maximum: 360
+          description: Supporting relative rotation evidence; never treated as absolute indoor position.
+        stepDelta:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Supporting progress evidence; never presented as exact distance.
+    ObservationProductResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - observationId
+        - sessionMode
+        - routeState
+        - landmarkMatchStatus
+        - spokenMessage
+        - shouldAdvance
+      properties:
+        requestId:
+          type: string
+        observationId:
+          type: string
+          format: uuid
+        sessionMode:
+          type: string
+          enum: [LEARN, NAVIGATE]
+        routeState:
+          type: string
+          enum: [OBSERVING, SEEKING_LANDMARK, STOP_AND_RESCAN, ROUTE_COMPLETED]
+        landmarkMatchStatus:
+          type: string
+          enum: [NOT_APPLICABLE, CANDIDATE, MATCHED, NOT_MATCHED, INSUFFICIENT_EVIDENCE]
+        candidateLandmark:
+          oneOf:
+            - $ref: '#/components/schemas/CandidateLandmark'
+            - type: 'null'
+        expectedLandmark:
+          oneOf:
+            - $ref: '#/components/schemas/LandmarkSummary'
+            - type: 'null'
+        spokenMessage:
+          type: string
+          minLength: 1
+          maxLength: 500
+        shouldAdvance:
+          type: boolean
+          description: Deterministic Express decision; never copied from model output.
+        retryAllowed:
+          type: boolean
+          default: true
+    CandidateLandmark:
+      type: object
+      additionalProperties: false
+      required: [proposedName, type, visibleText, stableFeatures]
+      properties:
+        proposedName:
+          type: string
+          maxLength: 100
+        type:
+          type: string
+          enum: [SIGN, ROOM_ENTRANCE, RECEPTION, ELEVATOR_AREA, CORRIDOR_MARKER, OTHER]
+        visibleText:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 100
+        stableFeatures:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 150
+        draftDescription:
+          type: string
+          maxLength: 300
+    LandmarkSummary:
+      type: object
+      additionalProperties: false
+      required: [id, sequenceIndex, name, spokenCue]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sequenceIndex:
+          type: integer
+          minimum: 0
+          maximum: 2
+        name:
+          type: string
+        spokenCue:
+          type: string
+    Landmark:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - sequenceIndex
+        - name
+        - spokenCue
+        - description
+        - visibleText
+        - stableFeatures
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        sequenceIndex:
+          type: integer
+          minimum: 0
+          maximum: 2
+        name:
+          type: string
+        spokenCue:
+          type: string
+        description:
+          type: string
+        visibleText:
+          type: array
+          items:
+            type: string
+        stableFeatures:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [AI_DRAFT, BUDDY_VERIFIED, PUBLISHED, OUTDATED]
+    Route:
+      type: object
+      additionalProperties: false
+      required: [id, name, originLabel, destinationLabel, status, landmarks, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        originLabel:
+          type: string
+        destinationLabel:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, OUTDATED]
+        landmarks:
+          type: array
+          minItems: 0
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/Landmark'
+        createdAt:
+          type: string
+          format: date-time
+        publishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+    RouteSession:
+      type: object
+      additionalProperties: false
+      required: [id, routeId, mode, status, currentSequence, startedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        routeId:
+          type: string
+          format: uuid
+        mode:
+          type: string
+          enum: [LEARN, NAVIGATE]
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, CANCELLED]
+        currentSequence:
+          type: integer
+          minimum: 0
+          maximum: 2
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, retryable]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - NOT_FOUND
+                - INVALID_STATE
+                - LANDMARK_LIMIT_REACHED
+                - DUPLICATE_LANDMARK
+                - AI_INVALID_RESPONSE
+                - AI_PROVIDER_UNAVAILABLE
+                - AI_TIMEOUT
+                - PAYLOAD_TOO_LARGE
+            message:
+              type: string
+            retryable:
+              type: boolean
+            requestId:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [field, issue]
+                properties:
+                  field:
+                    type: string
+                  issue:
+                    type: string

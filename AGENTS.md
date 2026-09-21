@@ -116,7 +116,7 @@ Owner chính của:
 - Express application backend
 - PostgreSQL/Prisma
 - product API
-- FastAPI service shell và integration boundary
+- Express-to-FastAPI integration adapter
 - deployment, fallback và accessibility implementation
 
 Trách nhiệm:
@@ -124,7 +124,7 @@ Trách nhiệm:
 - chuyển brief và user flow thành scope kỹ thuật khả thi
 - duy trì contract cho client và application backend
 - xây application flow bằng mock trước
-- tích hợp AI service vào sản phẩm
+- tích hợp AI service của Hồng Phúc vào sản phẩm
 - quản lý persistence, error state, timeout và deployment
 - giữ `main` ở trạng thái có thể demo
 
@@ -132,6 +132,7 @@ Trách nhiệm:
 
 Owner chính của:
 
+- FastAPI application shell, internal route và deployment
 - model/provider selection
 - prompt
 - preprocessing và postprocessing
@@ -143,6 +144,7 @@ Owner chính của:
 Trách nhiệm:
 
 - thử tối đa một hoặc hai model phù hợp
+- duy trì FastAPI runtime có thể deploy và tuân thủ `contracts/ai-service.openapi.yaml`
 - bàn giao Python module hoặc provider chạy được, không chỉ notebook
 - giữ output đúng contract đã thống nhất
 - ghi rõ limitations, unsafe cases và failure behavior
@@ -362,15 +364,16 @@ Chỉ coi production prototype sẵn sàng khi:
 
 ### Bảo Anh phụ trách
 
-- FastAPI application shell và route
-- internal authentication
 - Express-to-FastAPI integration
-- public/internal contract boundary
-- timeout, error mapping và deployment configuration
+- public/internal contract boundary phía Express
+- timeout, retry, error mapping và mock adapter phía Express
 - deterministic product/safety rules
 
 ### Hồng Phúc phụ trách
 
+- FastAPI application shell và internal route
+- internal authentication phía FastAPI
+- FastAPI deployment configuration và health endpoint
 - provider adapter
 - prompt và model request
 - text/image preprocessing
@@ -381,6 +384,7 @@ Chỉ coi production prototype sẵn sàng khi:
 ### Cùng duyệt
 
 - Pydantic schemas
+- `contracts/ai-service.openapi.yaml` và example payload
 - AI pipeline output
 - meaning của `requiresHumanReview` hoặc field tương đương
 - blocking/safety cases

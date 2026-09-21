@@ -1,8 +1,7 @@
 # Mobile client
 
-Expo/React Native client nếu competition brief cần camera, on-device accessibility hoặc mobile context.
+Expo/React Native là primary client của unique-landmark MVP.
 
 Mobile chỉ gọi public Express HTTPS URL. Không đặt model token trong `EXPO_PUBLIC_*`.
 
-Không xây mobile song song với web đầy đủ nếu một client đã đủ chứng minh golden path.
-
+Mobile phải hỗ trợ Learn và Navigate cho một route tối đa ba landmark, camera sampling, TTS, stale-response suppression và accessible loading/error/status. Mobile không tính tọa độ, không quyết định landmark match và không tuyên bố safety navigation.

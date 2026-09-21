@@ -1,0 +1,18 @@
+{
+  "requestId": "mobile-obs-002",
+  "observationId": "45df165f-d325-46bc-89d1-a8f0f686c445",
+  "sessionMode": "LEARN",
+  "routeState": "OBSERVING",
+  "landmarkMatchStatus": "CANDIDATE",
+  "candidateLandmark": {
+    "proposedName": "Elevator Level 2",
+    "type": "ELEVATOR_AREA",
+    "visibleText": ["LEVEL 2"],
+    "stableFeatures": ["Level 2 sign beside the elevator"],
+    "draftDescription": "Khu vực thang máy có biển LEVEL 2."
+  },
+  "expectedLandmark": null,
+  "spokenMessage": "Đã nhận diện khu vực thang máy với biển Level 2. Bạn có thể lưu landmark này.",
+  "shouldAdvance": false,
+  "retryAllowed": true
+}

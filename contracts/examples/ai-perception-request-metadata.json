@@ -1,0 +1,7 @@
+{
+  "requestId": "mobile-obs-002",
+  "locale": "vi-VN",
+  "analysisMode": "LANDMARK_DISCOVERY",
+  "frameCount": 2,
+  "note": "The actual request is multipart/form-data. Frame bytes are intentionally not stored in this example."
+}

@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Observation request is invalid.",
+    "retryable": false,
+    "requestId": "mobile-obs-002",
+    "details": [
+      {
+        "field": "frames",
+        "issue": "At least one JPEG or PNG frame is required."
+      }
+    ]
+  }
+}

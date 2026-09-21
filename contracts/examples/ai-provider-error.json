@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "PROVIDER_UNAVAILABLE",
+    "message": "The configured vision provider is temporarily unavailable.",
+    "retryable": true,
+    "requestId": "mobile-obs-002",
+    "details": []
+  }
+}

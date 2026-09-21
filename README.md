@@ -4,7 +4,7 @@ Repository chính của team **Hackathon Conquerors** cho RMIT Accessibility Des
 
 Focus area đã được BTC xác nhận: **Visual Impairment — Blind or Low Vision**.
 
-Repository hiện ở trạng thái **brief-ready**. Competition brief chưa được chép vào repo, vì vậy chưa có product idea, data model hoặc API contract nào được coi là đã chốt.
+Repository hiện ở trạng thái **scope selected / contract-first implementation ready**. Team đã chọn Stage 4 và một MVP hẹp: học một route onboarding từ tối đa ba landmark unique, để admin/buddy duyệt rồi replay từ ngày làm việc tiếp theo.
 
 ## Bắt đầu làm việc
 
@@ -16,7 +16,8 @@ Mọi thành viên và coding agent phải đọc theo thứ tự:
 4. [`docs/COMPETITION_BRIEF.md`](docs/COMPETITION_BRIEF.md)
 5. [`docs/SOLUTION_SCOPE.md`](docs/SOLUTION_SCOPE.md)
 6. [`docs/HANDOFF.md`](docs/HANDOFF.md)
-7. Contract, example payload và README trong phần code đang phụ trách
+7. [`docs/TECHNICAL_FLOW.md`](docs/TECHNICAL_FLOW.md)
+8. Contract, example payload và README trong phần code đang phụ trách
 
 Prompt mẫu cho thread mới và teammate nằm tại [`docs/THREAD_STARTER_PROMPTS.md`](docs/THREAD_STARTER_PROMPTS.md).
 
@@ -37,8 +38,9 @@ React/Vite web hoặc Expo mobile
        Google Gemini API
 ```
 
-- Bảo Anh phụ trách client, Express, PostgreSQL, integration, deployment và accessibility implementation.
-- Hồng Phúc phụ trách model/provider, prompt, preprocessing, structured output, evaluation, latency và limitations.
+- Bảo Anh phụ trách Expo mobile, React web, Express, PostgreSQL, integration, deployment và accessibility implementation trong application repository.
+- Hồng Phúc phụ trách FastAPI repository/runtime, model/provider, prompt, preprocessing, structured output, evaluation, latency và limitations.
+- `contracts/ai-service.openapi.yaml` trong repository này là source of truth cho ranh giới Express ↔ FastAPI.
 - Product/Pitch owner giữ problem evidence, user insight, story, deck và Q&A.
 
 Chi tiết ownership, Git workflow, contract-first workflow, deployment và submission rules nằm trong `AGENTS.md`.
@@ -51,7 +53,7 @@ apps/
   api/              Express application backend
   mobile/           Expo/React Native client nếu brief cần camera/mobile
 services/
-  ai/               FastAPI AI service và provider adapter
+  ai/               Integration notes; FastAPI runtime do Hồng Phúc sở hữu
 contracts/
   examples/         OpenAPI và payload mẫu dùng chung
 evals/
@@ -82,9 +84,9 @@ Không bắt buộc xây cả web và mobile. Sau khi đọc brief, chọn clien
 - [x] Repository skeleton đã sẵn sàng
 - [x] New-thread, teammate onboarding và handoff workflow đã được chuẩn hóa
 - [x] PlantUML source/rendering convention đã được định nghĩa
-- [ ] Competition brief đã được nhập
-- [ ] Solution scope đã được team chốt
-- [ ] API/AI contracts đã được tạo
+- [x] Competition brief đã được nhập
+- [x] Solution scope Stage 4 đã được team chốt
+- [x] Product API và AI-service contracts v1 đã được tạo
 - [ ] Application scaffold đã được tạo theo brief
 - [ ] Golden path chạy end-to-end
 

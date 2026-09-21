@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Perception request is invalid.",
+    "retryable": false,
+    "requestId": "mobile-obs-002",
+    "details": [
+      {
+        "field": "frames",
+        "issue": "Between one and three JPEG or PNG frames are required."
+      }
+    ]
+  }
+}
