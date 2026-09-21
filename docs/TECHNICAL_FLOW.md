@@ -38,8 +38,10 @@ Model      ─X→ route advance, publish or safety decision
 ### React web — Bảo Anh
 
 - List one route and its landmark drafts.
-- Edit name, description and spoken cue.
-- Verify/delete/reorder a draft and publish the complete route.
+- Edit landmark name, type and description.
+- Verify/delete/reorder a draft.
+- Connect landmarks with accessible dropdowns for relative maneuvers and edit the spoken cue for each directed edge.
+- Validate and publish the complete route.
 - Mark a published route outdated.
 - Keyboard and screen-reader accessible controls/status.
 
@@ -60,12 +62,14 @@ Model      ─X→ route advance, publish or safety decision
 Minimum planned entities:
 
 - `Route`: name, origin/destination label, status and published timestamp.
-- `Landmark`: route ID, sequence index, name, visible text, stable features, spoken cue and review status.
+- `Landmark`: stable place identity, name, visible text, stable features and review status.
+- `RouteLandmark`: route ID, landmark ID and sequence index; this lets a landmark be reused in later routes.
+- `RouteEdge`: route ID, sequence index, source/destination landmark IDs, relative maneuver and spoken cue.
 - `RouteSession`: route ID, mode (`LEARN`/`NAVIGATE`), current sequence and lifecycle status.
 - `Observation`: structured perception summary, request ID, quality, model/prompt version and latency; no raw frame.
 - `LandmarkReview`: edits, reviewer role, review status and timestamp.
 
-For the single linear MVP, `sequenceIndex` plus previous/next derivation is sufficient; no graph algorithm is required.
+For the single linear demo, ordered `RouteEdge` records are sufficient; no graph algorithm is required. Database/API design must not hard-code three landmarks even though the judged demo uses exactly three.
 
 ### FastAPI — Hồng Phúc
 
@@ -91,9 +95,10 @@ FastAPI must not return `turnLeft`, `safeToProceed`, `advanceCheckpoint`, `publi
 6. Express returns an accessible narration and a candidate landmark.
 7. Employee/buddy explicitly saves a useful unique candidate.
 8. Express normalises text, rejects/merges simple duplicates and stores AI_DRAFT.
-9. Steps 3–8 repeat until the route has at most three landmarks.
+9. Steps 3–8 repeat until the selected route landmarks are captured; the controlled demo stops at three.
 10. Web admin/buddy edits and verifies every landmark.
-11. Express publishes only when all landmarks are BUDDY_VERIFIED.
+11. Admin/buddy selects a relative maneuver and spoken cue for each directed edge.
+12. Express publishes only when all landmarks are BUDDY_VERIFIED and edges form one continuous route.
 ```
 
 The AI does not directly write the database. The save operation always passes through Express policy and validation.
@@ -102,11 +107,11 @@ The AI does not directly write the database. The save operation always passes th
 
 ```text
 1. Mobile loads a PUBLISHED route and starts a NAVIGATE session.
-2. Express returns the first expected landmark and verified spoken cue.
+2. Express returns the first expected landmark and the next verified RouteEdge cue.
 3. Mobile sends current sampled frames as an observation.
 4. FastAPI returns perception without knowing the final action.
 5. Express compares normalised evidence with only the expected ordered landmark.
-6. Match advances `currentSequence`; mobile announces the next verified cue.
+6. Match advances `currentSequence`; mobile announces the outgoing RouteEdge cue and next expected landmark.
 7. Insufficient/conflicting evidence keeps the same sequence and returns STOP_AND_RESCAN.
 8. Matching the third/final landmark completes the route.
 ```
@@ -118,6 +123,8 @@ The AI does not directly write the database. The save operation always passes th
 - Scene type and stable features are supporting evidence, not proof by themselves.
 - A landmark with the same normalised visible text and type in the same route is a duplicate candidate.
 - Ambiguous duplicate cases remain drafts for human resolution.
+- Route topology rejects self-loops, duplicate edge indexes, missing intermediate connections and landmark IDs outside the route.
+- Relative maneuver belongs to `RouteEdge`; it is not a permanent direction property of a landmark.
 - No model self-reported probability is treated as calibrated confidence.
 - No vector search or visual embedding is required for the demo.
 
@@ -158,8 +165,8 @@ Build order:
 1. OpenAPI validators and example payloads.
 2. Express mock AI adapter plus in-memory route state.
 3. PostgreSQL persistence.
-4. Mobile Learn and Navigate happy path.
-5. Web review/publish.
+4. Mobile Learn and Navigate happy path with a three-landmark demo fixture.
+5. Web review, relative-direction dropdowns and publish.
 6. FastAPI live integration.
 7. Unreadable/timeout/stale-response cases.
 8. Accessibility, eval, deployment and recorded fallback.

@@ -20,7 +20,8 @@ Current phase: `SCOPE_CONFIRMED_CONTRACTS_READY_FOR_IMPLEMENTATION`
 - Primary user: blind or low-vision new employee.
 - Primary client: Expo mobile with chest-mounted camera and accessible audio interaction.
 - Secondary client: small React web console for a human admin/buddy to review and publish landmark routes.
-- Golden path: learn one route on Day 1, verify at most three unique landmarks, then replay the published ordered route from Day 2 onward.
+- Golden path: learn one route on Day 1, verify unique landmarks, connect them with human-reviewed relative directions, then replay the published route from Day 2 onward.
+- Demo policy: the first judged route uses three landmarks; Product API and database do not impose a three-landmark ceiling.
 - Spatial model: topological order and relative cues only; no exact coordinates.
 - AI boundary: perception and draft extraction only; Express owns deterministic route state and persistence.
 - Raw image/video retention: none by default.
@@ -68,7 +69,7 @@ Current phase: `SCOPE_CONFIRMED_CONTRACTS_READY_FOR_IMPLEMENTATION`
 | Barrier-specific official brief | Received and classified |
 | Product scope | Confirmed by team in current thread |
 | End-user validation of physical-route priority | Pending Day 2 session |
-| Product and AI contracts | Initial v1 documented |
+| Product and AI contracts | Product API 1.1.0 and AI service 1.1.0 documented |
 | Working golden path | Not implemented |
 | AI evaluation | Not started |
 | Accessibility verification | Not started |

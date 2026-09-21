@@ -23,9 +23,9 @@ Branch/commit: codex/pathmemory-scope-contracts / 27c2af4
 Task objective: Lock the Stage 4 unique-landmark MVP, split repository ownership and create versioned Product/AI contracts.
 
 Confirmed product:
-- Day 1: blind/low-vision employee explores one route with a human buddy; AI proposes structured context for at most three useful unique landmarks.
+- Day 1: blind/low-vision employee explores one route with a human buddy; AI proposes structured context for useful unique landmarks. The controlled demo uses three, but the contract/data model permit more.
 - Express validates/deduplicates and stores AI_DRAFT records; AI never writes the database directly.
-- Human admin/buddy edits, verifies and publishes the route on an accessible web console.
+- Human admin/buddy edits/verifies landmarks, chooses directed relative maneuvers between them, writes spoken cues and publishes the route on an accessible web console.
 - Day 2 onward: mobile replays the published route using ordered landmarks and relative cues.
 - No exact coordinates, QR, SLAM, obstacle avoidance, RAG, raw image retention or general safety-navigation claim.
 
@@ -47,7 +47,8 @@ Files changed:
 - related README files
 
 Contract impact:
-- Initial v1 Product API and AI-service contracts; no previous runtime consumer exists.
+- Product API 1.1.0 removes the schema-level three-landmark ceiling and adds directed RouteEdge configuration while retaining deprecated landmark `spokenCue` fields for compatibility.
+- AI-service contract 1.1.0 adds workplace landmark categories while keeping its per-observation candidate limit independent of total route landmark count.
 - Both implementations must use the checked-in examples and stable error envelope.
 
 Not validated yet:

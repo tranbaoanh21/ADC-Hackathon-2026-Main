@@ -13,7 +13,7 @@ Phạm vi sở hữu: Expo mobile, React web review console, Express Product API
 
 Hãy bắt đầu bằng vertical slice nhỏ nhất:
 1. runtime validators và deterministic mock theo contracts v1;
-2. một route LEARN/NAVIGATE có tối đa ba landmark;
+2. một demo route LEARN/NAVIGATE có ba landmark và hai RouteEdge; không hard-code giới hạn ba trong schema/database;
 3. AI_DRAFT → BUDDY_VERIFIED → PUBLISHED;
 4. STOP_AND_RESCAN cho input không đủ bằng chứng.
 

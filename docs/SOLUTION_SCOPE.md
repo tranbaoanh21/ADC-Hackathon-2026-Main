@@ -16,8 +16,9 @@ Last updated: `2026-09-21`
 
 - Primary product: mobile application for a blind or low-vision new employee.
 - Secondary product: small accessible web review console for a human admin/buddy.
-- MVP learns and replays one short onboarding route using at most three unique landmarks.
+- The first controlled demo learns and replays one short route with three unique landmarks; the contract and database support additional landmarks later.
 - Landmark position is stored topologically: order, previous/next relationship and relative spoken cue. Exact indoor coordinates are not stored.
+- A human admin/buddy assigns a directed relative maneuver between consecutive landmarks, such as `GO_STRAIGHT`, `TURN_LEFT` or `TURN_RIGHT`.
 - AI produces perception and landmark drafts. Express owns route state, deduplication policy, persistence and all product actions. A human admin/buddy verifies and publishes the route.
 
 ### Assumptions requiring validation
@@ -53,8 +54,8 @@ Employee starts Learn Route with a human buddy
 → AI returns structured scene text and landmark candidates
 → employee/buddy saves only a useful unique landmark
 → Express validates, deduplicates and stores an AI_DRAFT
-→ repeat until the route has at most three ordered landmarks
-→ admin/buddy reviews names and spoken cues on the web
+→ repeat until the selected route landmarks are captured; the demo uses three
+→ admin/buddy reviews names and assigns relative directions/spoken cues on the web
 → admin/buddy verifies and publishes the route
 ```
 
@@ -84,6 +85,8 @@ A landmark is eligible for the MVP only when it is:
 
 Examples in scope: `RECEPTION`, `LEVEL 2` elevator sign and `MEETING ROOM A` sign.
 
+The architecture can later store additional workplace landmarks such as a check-in gate, restroom, canteen or other meeting rooms. A route should include only the landmarks needed for that journey, while the database may reuse the same approved landmark across multiple routes.
+
 Examples excluded: people, movable chairs, bins, bottles, temporarily open doors and decorative objects that do not identify route progress.
 
 The model may suggest uniqueness, but it does not own the decision. Express checks normalised visible text/type within the current route, and the admin/buddy resolves ambiguous duplicates.
@@ -105,7 +108,8 @@ The model may suggest uniqueness, but it does not own the decision. Express chec
 - Expo mobile Learn and Navigate modes.
 - Camera sampling with accessible start/stop/save controls.
 - Structured perception through Express → FastAPI → hosted vision model.
-- One route containing at most three unique ordered landmarks.
+- One controlled demo route containing three unique ordered landmarks, with no hard-coded three-landmark limit in the API/database.
+- Directed `RouteEdge` records containing source landmark, destination landmark, relative maneuver and human-reviewed spoken cue.
 - PostgreSQL persistence for routes, sessions, landmarks, observations and reviews.
 - Accessible React web review flow for a human admin/buddy.
 - Landmark states: `AI_DRAFT`, `BUDDY_VERIFIED`, `PUBLISHED`, `OUTDATED`.
@@ -129,7 +133,7 @@ The model may suggest uniqueness, but it does not own the decision. Express chec
 - Obstacle avoidance, hazard detection or claims that the path is safe.
 - Replacing a cane, guide dog or orientation-and-mobility skills.
 - Automatically saving every object detected by the camera.
-- More than one demo route or more than three published landmarks.
+- More than one route in the judged demo; additional production landmarks remain supported by the architecture.
 - RAG, vector database, fine-tuning, self-hosted GPU or full HR dashboard.
 - Raw image/video retention.
 - Authentication/OAuth unless later required for the deployed demo.

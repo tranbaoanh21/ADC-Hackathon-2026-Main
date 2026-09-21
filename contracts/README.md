@@ -2,7 +2,12 @@
 
 Source of truth cho ranh giới giữa client, Express và FastAPI.
 
-Contract v1 hiện gồm:
+Current contract versions:
+
+- Product API `1.1.0`: scalable landmark list plus directed `RouteEdge` relations.
+- AI service `1.1.0`: perception only, with extensible workplace landmark categories; independent of total route landmark count.
+
+Files:
 
 ```text
 contracts/
@@ -13,6 +18,7 @@ contracts/
     ├── product-validation-error.json
     ├── product-provider-timeout.json
     ├── product-route-published.json
+    ├── product-route-edges-request.json
     ├── ai-perception-request-metadata.json
     ├── ai-perception-success.json
     ├── ai-validation-error.json

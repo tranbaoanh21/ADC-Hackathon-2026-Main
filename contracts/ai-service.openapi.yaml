@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PathMemory Internal AI Service API
-  version: 1.0.0
+  version: 1.1.0
   description: >-
     Canonical Express-to-FastAPI contract. Hồng Phúc owns the FastAPI producer;
     Bảo Anh owns the Express consumer. The service returns perception only and
@@ -160,6 +160,7 @@ components:
         landmarkCandidates:
           type: array
           maxItems: 3
+          description: Per-observation candidate limit; unrelated to total route landmarks.
           items:
             $ref: '#/components/schemas/LandmarkCandidate'
         uncertaintyReasons:
@@ -185,8 +186,7 @@ components:
           minLength: 1
           maxLength: 100
         type:
-          type: string
-          enum: [SIGN, ROOM_ENTRANCE, RECEPTION, ELEVATOR_AREA, CORRIDOR_MARKER, OTHER]
+          $ref: '#/components/schemas/LandmarkType'
         visibleText:
           type: array
           maxItems: 10
@@ -266,3 +266,16 @@ components:
                     type: string
                   issue:
                     type: string
+    LandmarkType:
+      type: string
+      enum:
+        - SIGN
+        - ROOM_ENTRANCE
+        - RECEPTION
+        - CHECK_IN_GATE
+        - ELEVATOR_AREA
+        - CORRIDOR_MARKER
+        - RESTROOM
+        - MEETING_ROOM
+        - CANTEEN
+        - OTHER

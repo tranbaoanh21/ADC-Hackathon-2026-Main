@@ -9,7 +9,7 @@
       "id": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
       "sequenceIndex": 0,
       "name": "Reception",
-      "spokenCue": "Bắt đầu tại biển Reception. Landmark tiếp theo là thang máy tầng 2.",
+      "type": "RECEPTION",
       "description": "Biển RECEPTION tại quầy lễ tân.",
       "visibleText": ["RECEPTION"],
       "stableFeatures": ["Reception sign above the front desk"],
@@ -19,7 +19,7 @@
       "id": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       "sequenceIndex": 1,
       "name": "Elevator Level 2",
-      "spokenCue": "Đã đến thang máy tầng 2. Landmark tiếp theo là Meeting Room A.",
+      "type": "ELEVATOR_AREA",
       "description": "Biển LEVEL 2 cạnh cửa thang máy.",
       "visibleText": ["LEVEL 2"],
       "stableFeatures": ["Level 2 sign beside the elevator"],
@@ -29,11 +29,29 @@
       "id": "ffb52187-b769-4a0f-96b3-456292839602",
       "sequenceIndex": 2,
       "name": "Meeting Room A",
-      "spokenCue": "Đã đến Meeting Room A.",
+      "type": "MEETING_ROOM",
       "description": "Biển MEETING ROOM A cạnh cửa phòng.",
       "visibleText": ["MEETING ROOM A"],
       "stableFeatures": ["Meeting Room A sign beside the entrance"],
       "status": "PUBLISHED"
+    }
+  ],
+  "edges": [
+    {
+      "id": "18679377-b5fd-482f-83e5-7f6d16833296",
+      "sequenceIndex": 0,
+      "fromLandmarkId": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
+      "toLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
+      "maneuver": "GO_STRAIGHT",
+      "spokenCue": "Từ Reception, đi thẳng để tìm biển Level 2 cạnh thang máy."
+    },
+    {
+      "id": "65a345da-0928-47a2-98f5-ae6560313a3d",
+      "sequenceIndex": 1,
+      "fromLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
+      "toLandmarkId": "ffb52187-b769-4a0f-96b3-456292839602",
+      "maneuver": "TURN_LEFT",
+      "spokenCue": "Sau khi nhận diện thang máy tầng 2, rẽ trái và tìm biển Meeting Room A."
     }
   ],
   "createdAt": "2026-09-21T09:00:00+07:00",
