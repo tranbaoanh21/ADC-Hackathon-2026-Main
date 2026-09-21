@@ -1,8 +1,8 @@
 # PathMemory Technical Flow
 
-Status: `PLANNED — PRODUCT API V2 / AI SERVICE V1.1`
+Status: `IMPLEMENTED APPLICATION BOUNDARY — PRODUCT API V2 / AI SERVICE V1.1`
 
-This document defines the implementation boundary for the confirmed Stage 4 landmark-graph MVP. It does not claim that runtime code exists yet.
+This document defines the implementation boundary for the confirmed Stage 4 landmark-graph MVP. Mobile, web, Express and persistence are implemented; Hồng Phúc's live FastAPI runtime and the live provider integration smoke remain pending.
 
 ## One-sentence architecture
 
@@ -35,6 +35,8 @@ Model      ─X→ graph path, route advance, publish or safety decision
 
 ### React web — Bảo Anh
 
+- Open an existing Day-1 draft by the `Route ID` created and displayed by mobile Learn; web does not create a second graph.
+- Reload on demand to show newly saved mobile candidates; realtime push is not part of the MVP.
 - List stored `AI_DRAFT`, `BUDDY_VERIFIED`, `PUBLISHED` and `OUTDATED` landmarks.
 - Edit name, type, description and stable admin `displayOrder`.
 - Verify or reject drafts.
@@ -98,10 +100,11 @@ FastAPI does not receive the graph, query PostgreSQL, compute a path or return `
 7. Employee/buddy explicitly requests save for a useful stable candidate.
 8. Express deduplicates and immediately stores the record as AI_DRAFT.
 9. Steps 3–8 repeat for the bounded demo area.
-10. Web admin edits and transitions accepted drafts to BUDDY_VERIFIED.
-11. Admin creates directed edges using from/to/maneuver/spoken-cue controls.
-12. Express validates references, self-loops and duplicate directed pairs.
-13. Express publishes only a human-verified graph with usable directed paths.
+10. Buddy opens the mobile-created Route ID on web and reloads the stored candidates.
+11. Web admin edits and transitions accepted drafts to BUDDY_VERIFIED.
+12. Admin creates directed edges using from/to/maneuver/spoken-cue controls.
+13. Express validates references, self-loops and duplicate directed pairs.
+14. Express publishes only a human-verified graph with usable directed paths.
 ```
 
 The admin does not move an object from a temporary store into the database. Drafts already exist in PostgreSQL; review changes their state and graph relations.

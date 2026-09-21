@@ -17,6 +17,7 @@ Last updated: `2026-09-21`
 - Primary product: Expo mobile application for a blind or low-vision new employee.
 - Secondary product: small accessible React web console for a human admin/buddy.
 - Day 1 creates a bounded workplace landmark graph from a guided walk with a buddy.
+- Mobile Learn is the only Day-1 graph creator. Web opens that same draft using the Route ID shown on mobile; it does not create a parallel graph.
 - AI proposes landmark drafts. Express validates and stores each accepted proposal immediately as `AI_DRAFT`; admin approval is a later state transition, not the first database write.
 - Admin/buddy edits and verifies landmarks, then creates directed `RouteEdge` records with a relative maneuver and spoken cue before publishing the graph.
 - Day 2 onward, the employee uses a screen reader to select a published origin landmark and a reachable destination landmark. Express computes a deterministic path over the published graph.
@@ -57,7 +58,8 @@ Employee and human buddy start a LEARN session
 → employee/buddy explicitly saves only a useful, stable candidate
 → Express validates, deduplicates and stores an AI_DRAFT in PostgreSQL
 → repeat for the bounded demo area
-→ accessible admin web lists the stored drafts
+→ buddy enters the mobile-created Route ID on the accessible admin web
+→ web reloads and lists the drafts already stored by Express
 → admin edits and marks each accepted landmark BUDDY_VERIFIED
 → admin creates directed edges using from-landmark, to-landmark,
   maneuver dropdown and editable spoken cue

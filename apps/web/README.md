@@ -6,6 +6,8 @@ MVP web cần list/edit/reorder/delete/verify các draft đã tồn tại trong 
 
 Web chỉ gọi public Express API. Không đặt model key, database credential hoặc private service URL trong `VITE_*`.
 
+Mobile Learn là nơi duy nhất tạo graph ngày đầu. Sau khi tạo, mobile hiển thị `Route ID`; buddy dùng đúng mã này trên web để mở cùng bản nháp đã lưu trong Express/PostgreSQL. Web không tạo graph riêng và hiện không nhận push realtime: sau khi mobile lưu landmark mới, buddy nhấn **Làm mới landmark từ mobile**.
+
 Chạy local cùng Express:
 
 ```bash
@@ -14,7 +16,7 @@ npm run dev:web
 
 Đặt `VITE_API_URL` thành public/local Express URL. Web đã có:
 
-- mở hoặc tạo graph;
+- mở graph bằng `Route ID` do mobile Learn tạo và làm mới landmark vừa lưu;
 - xem landmark evidence và trạng thái bằng text, không chỉ bằng màu;
 - edit/verify từng landmark draft;
 - tạo, xóa và chỉnh directed edge với `from`, `to`, maneuver và spoken cue rõ ràng;
@@ -22,4 +24,4 @@ npm run dev:web
 - publish graph đủ điều kiện hoặc mark published graph outdated;
 - live-region status, alert error, visible focus và responsive layout.
 
-Seeded demo graph đã published nên được hiển thị read-only. Để thử review flow, tạo graph draft rồi dùng mobile Learn flow để thêm `AI_DRAFT` landmark vào cùng route ID.
+Seeded demo graph đã published nên được hiển thị read-only. Để thử review flow, tạo graph draft trên mobile Learn, lưu các `AI_DRAFT`, sau đó nhập Route ID đó trên web.

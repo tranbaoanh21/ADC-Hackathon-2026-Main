@@ -310,7 +310,8 @@ Verification on 2026-09-22:
 - Web lint, TypeScript check and Vite production build passed.
 - Edge browser smoke test loaded the published four-landmark graph through Express with restricted local CORS.
 - Browser accessibility tree exposed the page hierarchy, live status, alerts, every form label, directional fieldset and disabled/read-only states.
-- UI smoke test created a draft graph and confirmed Publish stays disabled with a textual requirement until two verified landmarks and one saved edge exist.
+- The refined web flow opens the draft graph created by mobile Learn via Route ID and reloads newly stored landmarks; it no longer creates a parallel empty graph.
+- UI smoke test loaded a draft graph and confirmed Publish stays disabled with a textual requirement until two verified landmarks and one saved edge exist.
 - Responsive desktop screenshot was visually inspected; no overlap or clipped primary control was observed.
 - Actual VoiceOver/NVDA keyboard walkthrough remains required before marking this phase complete.
 

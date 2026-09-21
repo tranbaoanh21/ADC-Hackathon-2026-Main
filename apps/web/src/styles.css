@@ -227,14 +227,15 @@ p {
   gap: 1.25rem 2rem;
   align-items: end;
 }
-.route-id-form,
-.create-route-form {
+.route-id-form {
   display: flex;
   gap: 0.75rem;
   align-items: end;
 }
-.create-route-form {
-  grid-column: 2;
+.route-workflow-note {
+  max-width: 34rem;
+  margin: 0.7rem 0 0;
+  color: var(--muted);
 }
 
 label {
@@ -401,6 +402,16 @@ textarea:hover {
   margin: 0;
   color: var(--muted);
 }
+.section-heading-support {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  max-width: 34rem;
+}
+.section-heading-support p {
+  margin: 0;
+  color: var(--muted);
+}
 .card-list,
 .edge-list {
   display: grid;
@@ -506,8 +517,7 @@ footer {
   }
   .hero .eyebrow,
   .hero h1,
-  .hero > p:last-child,
-  .create-route-form {
+  .hero > p:last-child {
     grid-column: 1;
     grid-row: auto;
   }
@@ -531,8 +541,7 @@ footer {
     width: min(100% - 1rem, 76rem);
     padding-top: 2rem;
   }
-  .route-id-form,
-  .create-route-form {
+  .route-id-form {
     align-items: stretch;
     flex-direction: column;
   }

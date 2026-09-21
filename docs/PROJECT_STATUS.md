@@ -20,6 +20,7 @@ Current phase: `DEPLOYMENT_PREPARATION_NEXT; DEVICE_AND_LIVE_AI_QA_BLOCKED`
 - Primary user: blind or low-vision new employee.
 - Primary client: Expo mobile with chest-mounted camera and accessible audio interaction.
 - Secondary client: small React web console for human admin/buddy review.
+- Mobile Learn is the sole creator of the Day-1 draft graph. Web opens the same graph by Route ID and reloads stored candidates; no realtime push or second web-created graph is in MVP scope.
 - Day 1: guided landmark discovery stores accepted candidates in PostgreSQL as `AI_DRAFT`; admin verifies landmarks, creates directed relative edges/cues and publishes one bounded workplace graph.
 - Day 2+: user selects origin and reachable destination with a screen reader; Express computes a deterministic BFS path; camera confirms the origin and later expected landmarks; mobile speaks human-reviewed edge cues.
 - Demo graph: Reception, Elevator Level 2, Meeting Room A and Restroom Level 2, with one branch and explicit reverse edges where return travel is supported.
@@ -65,7 +66,7 @@ Current phase: `DEPLOYMENT_PREPARATION_NEXT; DEVICE_AND_LIVE_AI_QA_BLOCKED`
 | Component | Owner | Local | Production | URL/identifier |
 |---|---|---|---|---|
 | Mobile | Bảo Anh | Learn/Navigate camera flow implemented; typecheck, 11 state/contrast tests and Android production bundle pass; device/VoiceOver/TalkBack QA pending | Not deployed | TBD |
-| Web review console | Bảo Anh | Review/edit edges/publish/outdated UI implemented; Edge AX-tree smoke and build pass; actual screen-reader QA pending | Not deployed | TBD |
+| Web review console | Bảo Anh | Mobile-created Route ID load/refresh plus review/edit edges/publish/outdated UI implemented; Edge AX-tree smoke and build pass; actual screen-reader QA pending | Not deployed | TBD |
 | Express API | Bảo Anh | Product API v2 with graph/BFS/session policy, in-memory/Prisma persistence, deterministic mock and contract-compatible live FastAPI adapter; 42 tests pass, 3 database tests conditionally skipped without test DB | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Prisma schema/migration/seed and repository verified on isolated PostgreSQL; 32 total tests pass | Not provisioned | Secret; never record connection string here |
 | FastAPI AI service | Hồng Phúc | Not implemented | Not deployed | Repository and URL TBD |

@@ -192,7 +192,6 @@ export function App() {
   const [routeId, setRouteId] = useState(initialRouteId);
   const [graph, setGraph] = useState<WorkplaceGraph | null>(null);
   const [edgeDrafts, setEdgeDrafts] = useState<EdgeDraft[]>([]);
-  const [newRouteName, setNewRouteName] = useState("Ngày đầu tại văn phòng");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("Sẵn sàng tải graph.");
   const [error, setError] = useState("");
@@ -323,8 +322,9 @@ export function App() {
           <p className="eyebrow">Stage 4 · Workplace onboarding</p>
           <h1 id="page-title">Duyệt bản đồ landmark tương đối</h1>
           <p>
-            Buddy xác minh từng landmark và từng câu hướng dẫn trước khi nhân viên dùng trên mobile.
-            PathMemory không lưu tọa độ và không phát hiện vật cản.
+            Mobile tạo bản nháp trong chuyến đi cùng buddy. Tại đây, buddy xác minh landmark, thiết
+            lập từng hướng đi và xuất bản trước khi nhân viên sử dụng lại. PathMemory không lưu tọa
+            độ và không phát hiện vật cản.
           </p>
         </section>
 
@@ -340,7 +340,11 @@ export function App() {
         <section className="panel route-loader" aria-labelledby="route-loader-title">
           <div>
             <p className="section-kicker">Graph workspace</p>
-            <h2 id="route-loader-title">Mở graph cần duyệt</h2>
+            <h2 id="route-loader-title">Mở bản nháp từ mobile</h2>
+            <p className="route-workflow-note" id="route-id-help">
+              Mobile Learn tạo graph và hiển thị Route ID. Dán mã đó để buddy xem cùng dữ liệu đã
+              lưu trong Express/PostgreSQL.
+            </p>
           </div>
           <form
             className="route-id-form"
@@ -350,38 +354,16 @@ export function App() {
             }}
           >
             <label>
-              Route ID
+              Route ID từ mobile Learn
               <input
                 value={routeId}
                 onChange={(event) => setRouteId(event.target.value)}
+                aria-describedby="route-id-help"
                 required
               />
             </label>
             <button className="button button-primary" type="submit" disabled={busy}>
-              Tải graph
-            </button>
-          </form>
-          <form
-            className="create-route-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void runAction(async () => {
-                const created = await productApi.createRoute(newRouteName);
-                applyGraph(created, `Đã tạo graph nháp ${created.name}.`);
-              }, "Đang tạo graph nháp…");
-            }}
-          >
-            <label>
-              Tên graph mới
-              <input
-                value={newRouteName}
-                onChange={(event) => setNewRouteName(event.target.value)}
-                required
-                maxLength={100}
-              />
-            </label>
-            <button className="button button-secondary" type="submit" disabled={busy}>
-              Tạo graph ngày đầu
+              Mở graph
             </button>
           </form>
         </section>
@@ -423,12 +405,28 @@ export function App() {
                   <p className="section-kicker">Bước 1</p>
                   <h2 id="landmarks-title">Xác minh landmark</h2>
                 </div>
-                <p>Kiểm tra tên, dấu hiệu ổn định và thứ tự hiển thị. AI chỉ tạo bản nháp.</p>
+                <div className="section-heading-support">
+                  <p>
+                    Kiểm tra tên, dấu hiệu ổn định và thứ tự hiển thị. AI chỉ tạo bản nháp; buddy
+                    chịu trách nhiệm xác minh.
+                  </p>
+                  <button
+                    className="button button-quiet"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void loadGraph(graph.id)}
+                  >
+                    Làm mới landmark từ mobile
+                  </button>
+                </div>
               </div>
               {graph.landmarks.length === 0 ? (
                 <div className="empty-state">
                   <h3>Chưa có landmark</h3>
-                  <p>Dùng mobile ở chế độ Learn để ghi nhận candidate, rồi quay lại graph này.</p>
+                  <p>
+                    Tiếp tục đúng phiên Learn trên mobile, lưu candidate, rồi nhấn “Làm mới landmark
+                    từ mobile”.
+                  </p>
                 </div>
               ) : (
                 <div className="card-list">
@@ -456,7 +454,8 @@ export function App() {
                   <h2 id="edges-title">Thiết lập hướng đi tương đối</h2>
                 </div>
                 <p>
-                  Mỗi dòng là một cạnh có hướng. Muốn đi chiều ngược lại phải tạo thêm một dòng.
+                  Mỗi dòng là một cạnh có hướng được buddy xác nhận. Muốn đi chiều ngược lại phải
+                  tạo thêm một dòng; thay đổi chỉ vào database khi nhấn “Lưu tất cả hướng đi”.
                 </p>
               </div>
               <div className="edge-list">
@@ -610,7 +609,7 @@ export function App() {
                 <h2 id="publish-title">Xuất bản cho mobile</h2>
                 <p>
                   Chỉ xuất bản sau khi buddy đã kiểm tra mọi landmark và câu chỉ dẫn tại nơi làm
-                  việc.
+                  việc. Mobile ngày sau chỉ cho chọn đường từ graph đã xuất bản.
                 </p>
               </div>
               <div className="button-row">

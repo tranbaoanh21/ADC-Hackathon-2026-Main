@@ -99,12 +99,6 @@ export const productApi = {
   getRoute(routeId: string) {
     return apiRequest<WorkplaceGraph>(`/api/v2/routes/${encodeURIComponent(routeId)}`);
   },
-  createRoute(name: string) {
-    return apiRequest<WorkplaceGraph>("/api/v2/routes", {
-      method: "POST",
-      body: JSON.stringify({ name, locale: "vi-VN" }),
-    });
-  },
   reviewLandmark(
     routeId: string,
     landmarkId: string,

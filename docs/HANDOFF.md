@@ -15,7 +15,7 @@ Application progress on 2026-09-22: the graph/BFS/session kernel, every Product 
 - Express Product API v2: implemented and tested against in-memory repositories
 - Mock/live providers: deterministic mock and HTTP FastAPI adapter implemented; real FastAPI/provider smoke pending
 - Database schema: Prisma 7.10 schema, migration, constraints, seed and runtime adapter implemented and verified
-- Admin web: landmark review, directed-edge editing, cue replay, publish/outdated and accessible error/status behavior implemented
+- Admin web: opens the mobile-created draft by Route ID, reloads newly stored candidates, then supports landmark review, directed-edge editing, cue replay, publish/outdated and accessible error/status behavior; web does not create a parallel graph
 - Expo mobile: explicit per-scan camera, Day-1 draft/save, screen-reader origin/destination selection, stale-response suppression, TTS/screen-reader coordination, replay, safety copy and route completion implemented
 - Accessibility evidence: executable palette contrast checks, Edge accessibility-tree/layout smoke and manual device matrices recorded in `docs/ACCESSIBILITY_QA.md`; physical screen-reader runs remain pending
 - Deployment: not started
@@ -31,7 +31,7 @@ Task objective: Replace fixed-route replay with a bounded, human-reviewed landma
 
 Confirmed product:
 - Day 1: a blind/low-vision employee explores a bounded office area with a human buddy. AI proposes structured candidates; Express stores explicitly accepted candidates as AI_DRAFT in PostgreSQL.
-- Admin web lists the stored drafts. Admin edits/verifies landmarks, creates directed from/to edges, chooses a relative maneuver, edits the spoken cue and publishes the graph.
+- Mobile Learn creates the only Day-1 draft graph and shows its Route ID. Admin web opens that same ID and reloads the stored drafts; it does not receive realtime push or create a parallel graph. Admin edits/verifies landmarks, creates directed from/to edges, chooses a relative maneuver, edits the spoken cue and publishes the graph.
 - Day 2+: the employee uses a screen reader to select an origin and a destination reachable through published directed edges.
 - Express computes a deterministic FEWEST_EDGES path with BFS and starts in AWAITING_START_CONFIRMATION.
 - Camera perception must confirm the selected origin before Express returns the first movement cue. Later matches advance only along plannedPath.
