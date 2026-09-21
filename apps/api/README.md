@@ -10,3 +10,13 @@ Scope landmark graph và Product API v2 đã chốt. Trước khi scaffold, đ�
 - `contracts/ai-service.openapi.yaml`
 
 Vertical slice đầu tiên phải dùng deterministic AI mock và graph fixture bốn landmark có một nhánh. Express sở hữu database write, review/publish, directed `RouteEdge`, reachable-destination filtering, deterministic BFS, start-landmark confirmation, session state và `STOP_AND_RESCAN`. FastAPI chỉ cung cấp perception theo AI-service v1.1; không route, query database hoặc quyết định advance.
+
+Scaffold hiện tại:
+
+```bash
+npm install
+npm run dev:api
+npm run test --workspace @pathmemory/api
+```
+
+`GET /health` đã được implement và không gọi PostgreSQL/FastAPI. Product endpoints, graph kernel, repositories và AI adapter thuộc các phase tiếp theo trong `PLAN.md`.

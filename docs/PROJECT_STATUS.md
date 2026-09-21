@@ -1,8 +1,8 @@
 # Project Status
 
-Last updated: 2026-09-21
+Last updated: 2026-09-22
 
-Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
+Current phase: `APPLICATION_IMPLEMENTATION_STARTED`
 
 ## Confirmed facts
 
@@ -47,7 +47,7 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `codex/pathmemory-scope-contracts` | Lock landmark-graph scope and Product API v2 handoff | Complete at `4e72a76`; ready for teammate pull | Product API 2.0.0 breaking; AI service remains 1.1.0 | None |
+| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phase 0 complete; Phase 1 next | No contract change | None |
 | Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval | Not started | Must remain AI service 1.1-compatible | Needs latest handoff branch/commit |
 
 ## Next implementation gate
@@ -64,9 +64,9 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 
 | Component | Owner | Local | Production | URL/identifier |
 |---|---|---|---|---|
-| Mobile | Bảo Anh | Not scaffolded | Not built | TBD |
-| Web review console | Bảo Anh | Not scaffolded | Not deployed | TBD |
-| Express API | Bảo Anh | Not scaffolded | Not deployed | TBD |
+| Mobile | Bảo Anh | Expo SDK 57 shell; typecheck passes | Not built | TBD |
+| Web review console | Bảo Anh | React/Vite shell; build passes | Not deployed | TBD |
+| Express API | Bảo Anh | Express/TypeScript shell; health test/build pass | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Not configured | Not provisioned | Secret; never record connection string here |
 | FastAPI AI service | Hồng Phúc | Not implemented | Not deployed | Repository and URL TBD |
 | Hosted vision model | Hồng Phúc | Not integrated | Not verified | Model ID TBD; never record API key here |

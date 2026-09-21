@@ -1,6 +1,8 @@
 # Team Handoff
 
-Current state: Stage 4 landmark-graph scope and versioned contracts are ready for parallel implementation. No application or FastAPI runtime has been implemented yet.
+Current state: Stage 4 landmark-graph scope and versioned contracts are ready for parallel implementation. The application workspace/API-web-mobile shells are scaffolded; graph, persistence and product flows are not implemented yet. FastAPI implementation remains owned by Hồng Phúc.
+
+Application execution is tracked in root `PLAN.md` on branch `codex/application-vertical-slice`. Bảo Anh's implementation order is deterministic domain/API mock first, then PostgreSQL, admin web, mobile and live FastAPI integration. Hồng Phúc's AI-service boundary remains unchanged.
 
 ## Current integration boundary
 
@@ -8,6 +10,7 @@ Current state: Stage 4 landmark-graph scope and versioned contracts are ready fo
 - AI-service contract: `contracts/ai-service.openapi.yaml` v1.1.0
 - Examples: `contracts/examples/`
 - Technical flow: `docs/TECHNICAL_FLOW.md`
+- Express health shell: implemented and tested
 - Mock/live providers: contract defined, implementation pending
 - Database schema: entities/constraints planned, migration not created
 - Deployment: not started

@@ -87,7 +87,7 @@ Không bắt buộc xây cả web và mobile. Sau khi đọc brief, chọn clien
 - [x] Competition brief đã được nhập
 - [x] Solution scope Stage 4 đã được team chốt
 - [x] Product API v2 và AI-service v1.1 contracts đã được tạo
-- [ ] Application scaffold đã được tạo theo brief
+- [x] Application workspace và API/web/mobile shells đã được scaffold theo brief
 - [ ] Golden path chạy end-to-end
 
 ## Secrets

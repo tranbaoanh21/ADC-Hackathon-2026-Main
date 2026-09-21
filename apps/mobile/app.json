@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "PathMemory",
+    "slug": "pathmemory",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#006D77"
+      }
+    }
+  }
+}
