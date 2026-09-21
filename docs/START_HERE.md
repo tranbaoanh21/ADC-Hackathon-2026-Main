@@ -15,10 +15,11 @@ Repository là shared context. Chat history giữa Bảo Anh, Hồng Phúc và c
 1. `AGENTS.md` — rules, ownership, architecture boundaries và quality gates.
 2. `docs/PROJECT_STATUS.md` — dự án đang ở phase nào và task nào đang hoạt động.
 3. `docs/COMPETITION_BRIEF.md` — official facts và end-user evidence.
-4. `docs/SOLUTION_SCOPE.md` — product decisions, golden path, MVP và non-goals.
-5. `docs/HANDOFF.md` — thay đổi mới nhất, contract impact và việc tiếp theo.
-6. `contracts/` — interface đã thống nhất.
-7. README và tests trong phần code sẽ sửa.
+4. `docs/UNIVERSAL_DESIGN.md` — design principles và accessibility review questions.
+5. `docs/SOLUTION_SCOPE.md` — product decisions, golden path, MVP và non-goals.
+6. `docs/HANDOFF.md` — thay đổi mới nhất, contract impact và việc tiếp theo.
+7. `contracts/` — interface đã thống nhất.
+8. README và tests trong phần code sẽ sửa.
 
 Chỉ đọc `docs/diagrams/README.md` khi task liên quan đến architecture/request-flow diagram.
 

@@ -3,6 +3,7 @@
 Thư mục này giữ source of truth cho problem, solution scope, evidence và các quyết định trong ngày thi.
 
 - `COMPETITION_BRIEF.md`: nội dung brief và constraint chính thức.
+- `UNIVERSAL_DESIGN.md`: bảy nguyên tắc Universal Design, câu hỏi review và cách áp dụng trong hackathon.
 - `SOLUTION_SCOPE.md`: primary user, barrier, golden path, non-goals và success metrics.
 - `START_HERE.md`: read order và boot sequence cho người hoặc agent mới.
 - `PROJECT_STATUS.md`: trạng thái hiện tại, active work và next gate.
@@ -21,4 +22,3 @@ Khi thêm evidence, luôn gắn nhãn:
 Không lưu raw sensitive interview data, ảnh cá nhân hoặc thông tin liên hệ nếu không cần thiết.
 
 Khi một quyết định thay đổi, cập nhật file sở hữu quyết định đó trong cùng commit với code liên quan. Không dùng `README.md` làm nơi ghi mọi chi tiết tạm thời.
-
