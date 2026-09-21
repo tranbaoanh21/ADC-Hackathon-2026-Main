@@ -1,6 +1,6 @@
 # Team Handoff
 
-Current state: Stage 4 landmark-graph scope and versioned contracts are ready for parallel implementation. No application or FastAPI runtime has been implemented yet.
+Current state: Stage 4 landmark-graph scope and versioned contracts are ready for parallel implementation. The FastAPI vertical slice in `services/ai/` includes deterministic mock, a Gemini adapter and a permission-approved six-observation visual run for `landmark-perception-v3`; application integration remains pending.
 
 ## Current integration boundary
 
@@ -8,11 +8,75 @@ Current state: Stage 4 landmark-graph scope and versioned contracts are ready fo
 - AI-service contract: `contracts/ai-service.openapi.yaml` v1.1.0
 - Examples: `contracts/examples/`
 - Technical flow: `docs/TECHNICAL_FLOW.md`
-- Mock/live providers: contract defined, implementation pending
+- Mock/live providers: deterministic mock and Gemini adapter implemented; one local Gemini smoke passed
 - Database schema: entities/constraints planned, migration not created
 - Deployment: not started
 
-## Latest context handoff
+## FastAPI monorepo handoff
+
+```text
+Date/time: 2026-09-22
+From: Hồng Phúc / AI-model track
+To: Bảo Anh and integration track
+Branch/path: feat/fastapi-perception / services/ai/
+Implementation commit: bd3b4f8 (`feat(ai): add landmark perception service`)
+Task objective: Implement the smallest AI-service v1.1 FastAPI vertical slice with deterministic mock and a swappable Gemini adapter.
+
+Decision:
+- FastAPI remains in this monorepo under services/ai/; no separate repository will be created.
+- Owner remains Hồng Phúc.
+- Canonical contract remains contracts/ai-service.openapi.yaml v1.1.0.
+- This repository-location decision is not a breaking contract change.
+
+Runtime scope:
+- GET /health without a provider call.
+- Authenticated multipart POST /internal/v1/perception.
+- Strict request/frame limits and JPEG/PNG byte validation.
+- Strict Pydantic success/error schemas and deterministic mock provider.
+- Gemini adapter with structured output, in-memory image preparation and sanitized provider errors.
+- No PostgreSQL, graph, BFS, session, movement cue or safety decision.
+
+Evidence boundary:
+- Gemini adapter is tested with fake clients and a permission-approved live
+  `gemini-3.1-flash-lite` run over one PNG and five sampled video frames.
+- All six responses were schema-valid and passed their defined semantic
+  expectations after frame-level ground-truth review. This is a small pilot set,
+  not a general accuracy claim.
+- FastAPI-side latency for that run was P50 3064 ms, P95 11741 ms and max
+  13989 ms. It is not end-to-end latency; the high outlier remains unresolved.
+- No deployment, end-to-end latency, reliability-distribution or cost claim
+  exists yet.
+- Mock output is development/integration evidence only, not AI-quality evidence.
+
+Contract impact: none.
+Local verification: Python 3.13.9; Ruff lint/format passed; 48 pytest cases passed; local Uvicorn health and authenticated mock perception returned 200. The visual eval runner extracted five ordered frames from a local video, sent them with one local PNG through `gemini-3.1-flash-lite`, validated AI-service v1.1 output and recorded only structured JSONL under the ignored `evals/runs/` directory. Raw media remains ignored. No API key was printed or recorded in repository documentation.
+
+Files for Bảo Anh:
+- Canonical interface: `contracts/ai-service.openapi.yaml` v1.1.0.
+- Product-safe example response: `contracts/examples/ai-perception-success.json`.
+- FastAPI setup and environment: `services/ai/README.md` and `services/ai/.env.example`.
+- Fixed local visual manifest: `evals/cases/visual-local.json`.
+- Live/local eval command: `services/ai/scripts/run_live_visual_eval.ps1`.
+
+Integration action for Bảo Anh:
+1. Keep mobile/web calling Express only; do not call FastAPI directly.
+2. Configure Express with the FastAPI base URL and matching internal bearer token.
+3. Send one-to-three ephemeral JPEG/PNG frames plus `requestId`, `locale` and `analysisMode` as multipart data.
+4. Validate the response against AI-service v1.1 before storing any field.
+5. Store an explicitly accepted candidate as `AI_DRAFT`; FastAPI must not write PostgreSQL or approve the landmark.
+6. Map timeout/provider/schema errors without advancing a route or navigation session.
+
+Known follow-up work for Hồng Phúc:
+- Expand the fixed visual set from 6 observations to 10-20 representative positive and negative cases.
+- Deploy FastAPI and record its production identifier without recording secrets.
+- Measure end-to-end latency and cost with the Express integration; current latency is FastAPI-side only.
+```
+
+## Original scope handoff (historical snapshot)
+
+The packet below records the state before the FastAPI implementation. The
+current FastAPI status and verification evidence in the section above supersede
+its pending-runtime notes.
 
 ```text
 Date/time: 2026-09-21
@@ -79,5 +143,5 @@ Do not merge a breaking AI-boundary change until both owners have compatible imp
 - State contract impact explicitly.
 - Do not report a live-model test as passed without model ID, test input class and result.
 - Do not paste token, `.env`, database URL, private frame or unique submission link.
-- When Hồng Phúc creates/uses a separate AI repository, record its URL/path and commit in this file.
+- FastAPI changes must reference the monorepo branch/commit and `services/ai/` path in this file.
 - If a task is merged, update `docs/PROJECT_STATUS.md` in the same PR or immediately after merge.

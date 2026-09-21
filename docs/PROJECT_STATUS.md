@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-09-21
+Last updated: 2026-09-22
 
 Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 
@@ -34,21 +34,26 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 - Product API `2.0.0`: breaking change from the linear v1 route model to a bounded directed landmark graph with reachable destinations and navigation session path planning.
 - AI service `1.1.0`: unchanged perception boundary; no graph, database or routing responsibility.
 - Canonical contracts and examples are in `contracts/`.
-- No runtime application or FastAPI implementation exists yet.
+- A FastAPI AI-service v1.1 vertical slice now exists in `services/ai/` with a
+  deterministic mock and a Gemini adapter. Prompt `landmark-perception-v3` has
+  one permission-approved local visual run over one PNG and five sampled video
+  frames; all six responses were schema-valid and passed their defined semantic
+  expectations after frame-level ground-truth review. Application integration
+  remains unverified.
 
 ## Repository and ownership boundary
 
 - Bảo Anh owns this application repository's mobile, web, Express, PostgreSQL/Prisma, Product API v2, mock/live AI adapter and end-to-end integration.
-- Hồng Phúc owns the FastAPI runtime/repository, model adapter, prompt, preprocessing, structured output and AI eval.
+- Hồng Phúc owns the FastAPI runtime in this monorepo at `services/ai/`, model adapter, prompt, preprocessing, structured output and AI eval.
 - This repository's `contracts/ai-service.openapi.yaml` is the canonical Express ↔ FastAPI contract.
-- FastAPI repository URL/path is `TBD` and must be added to `docs/HANDOFF.md` when Hồng Phúc provides it.
+- Moving the FastAPI runtime into this monorepo is not a contract change; the canonical AI-service version remains `1.1.0`.
 
 ## Current active work
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
 | Bảo Anh | `codex/pathmemory-scope-contracts` | Lock landmark-graph scope and Product API v2 handoff | Complete at `4e72a76`; ready for teammate pull | Product API 2.0.0 breaking; AI service remains 1.1.0 | None |
-| Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval | Not started | Must remain AI service 1.1-compatible | Needs latest handoff branch/commit |
+| Hồng Phúc | `feat/fastapi-perception`, `services/ai/` | Implement and visually evaluate mock plus Gemini-adapter `POST /internal/v1/perception` vertical slice | Implemented at `bd3b4f8`; Ruff/format and 48 tests pass; local visual run has 6/6 schema-valid and defined semantic-expectation passes | None; remains AI service 1.1-compatible | Express integration, deployment and expansion to 10–20 fixed cases remain follow-up work |
 
 ## Next implementation gate
 
@@ -68,8 +73,8 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 | Web review console | Bảo Anh | Not scaffolded | Not deployed | TBD |
 | Express API | Bảo Anh | Not scaffolded | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Not configured | Not provisioned | Secret; never record connection string here |
-| FastAPI AI service | Hồng Phúc | Not implemented | Not deployed | Repository and URL TBD |
-| Hosted vision model | Hồng Phúc | Not integrated | Not verified | Model ID TBD; never record API key here |
+| FastAPI AI service | Hồng Phúc | Mock and Gemini adapter in `services/ai/`; 48 tests plus local health/authenticated mock and visual eval pass on Python 3.13.9 | Not deployed | Monorepo path confirmed; production URL TBD |
+| Hosted vision model | Hồng Phúc | `gemini-3.1-flash-lite` with `landmark-perception-v3` returned 6/6 schema-valid and defined semantic-expectation passes on one PNG plus five sampled video frames | Not deployed | Small permission-approved local set only; FastAPI-side P50 3064 ms, P95 11741 ms, max 13989 ms; not end-to-end latency or a general accuracy claim |
 
 ## Evidence status
 
@@ -80,7 +85,7 @@ Current phase: `LANDMARK_GRAPH_SCOPE_CONFIRMED_CONTRACTS_READY`
 | End-user validation of physical-orientation priority | Pending Day 2 session |
 | Product and AI contracts | Product API 2.0.0 and AI service 1.1.0 documented |
 | Working golden path | Not implemented |
-| AI evaluation | Not started |
+| AI evaluation | Pilot visual eval started: 6 observations, 6/6 schema-valid and defined semantic-expectation passes after frame-level ground-truth review; expand to 10–20 representative positive/negative cases before a quality claim |
 | Accessibility verification | Not started |
-| Latency/reliability/cost | Not measured |
+| Latency/reliability/cost | One six-observation local AI-service run measured P50 3064 ms, P95 11741 ms and max 13989 ms; end-to-end latency, reliability distribution and cost remain unmeasured |
 | Submission deck/video | Official template available; content not started |
