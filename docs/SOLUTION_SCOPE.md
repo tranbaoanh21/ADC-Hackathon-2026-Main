@@ -4,6 +4,15 @@ Status: `UNDECIDED`
 
 Phần này phải được team thống nhất trước khi scaffold application theo brief.
 
+## Scope gate
+
+- Current gate: `ON HOLD — BRIEF RECEIVED, SOLUTION DISCUSSION NOT STARTED`
+- The six career stages and their barriers are recorded in `docs/COMPETITION_BRIEF.md` without ranking them.
+- No primary user, workplace context, barrier, golden path, client, AI task, architecture or product name is selected.
+- No idea discussed in chat is a repository decision.
+- Working technology defaults in `docs/PROJECT_STATUS.md` remain defaults, not solution requirements.
+- Product/application scaffolding remains prohibited until this file is completed and explicitly confirmed by the team.
+
 ## Problem
 
 - Primary user: `TBD`
@@ -95,4 +104,3 @@ Targets remain hypotheses until measured. Do not present them as achieved result
 | Product/application | Bảo Anh | Client, Express, persistence, integration, deployment |
 | AI/model | Hồng Phúc | Provider, prompt, structured output, eval, limitations |
 | Research/pitch | TBD | Evidence, journey, deck, video and Q&A |
-
