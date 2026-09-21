@@ -304,7 +304,11 @@ export function App() {
       <header className="topbar">
         <a className="brand" href="#main-content" aria-label="PathMemory Admin — về nội dung chính">
           <span className="brand-mark" aria-hidden="true">
-            P
+            <span className="brand-path brand-path-vertical" />
+            <span className="brand-path brand-path-horizontal" />
+            <span className="brand-node brand-node-start" />
+            <span className="brand-node brand-node-middle" />
+            <span className="brand-node brand-node-end" />
           </span>
           <span>
             <strong>PathMemory</strong>

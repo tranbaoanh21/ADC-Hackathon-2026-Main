@@ -2,6 +2,8 @@ import { type CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { colors } from "./theme";
+
 interface CapturePanelProps {
   readonly busy: boolean;
   readonly purpose: string;
@@ -32,7 +34,7 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
   if (!permission) {
     return (
       <View style={styles.panel} accessibilityLiveRegion="polite">
-        <ActivityIndicator color="#006D77" />
+        <ActivityIndicator color={colors.teal} />
         <Text style={styles.help}>Đang kiểm tra quyền camera…</Text>
       </View>
     );
@@ -124,18 +126,18 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: "#E7F5F5",
+    backgroundColor: colors.tealSoft,
     borderColor: "#8BC6C9",
     borderRadius: 16,
     borderWidth: 1,
     gap: 14,
     padding: 18,
   },
-  panelTitle: { color: "#102A43", fontSize: 22, fontWeight: "700" },
+  panelTitle: { color: colors.navy, fontSize: 22, fontWeight: "700" },
   help: { color: "#243B53", fontSize: 17, lineHeight: 25 },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#006D77",
+    backgroundColor: colors.teal,
     borderRadius: 12,
     justifyContent: "center",
     minHeight: 56,
@@ -144,19 +146,19 @@ const styles = StyleSheet.create({
   },
   captureButton: {
     alignItems: "center",
-    backgroundColor: "#006D77",
-    borderColor: "#FFD166",
+    backgroundColor: colors.teal,
+    borderColor: colors.focus,
     borderRadius: 12,
     borderWidth: 3,
     justifyContent: "center",
     minHeight: 60,
     padding: 14,
   },
-  primaryButtonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "700" },
+  primaryButtonText: { color: colors.surface, fontSize: 18, fontWeight: "700" },
   secondaryButton: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#006D77",
+    backgroundColor: colors.surface,
+    borderColor: colors.teal,
     borderRadius: 12,
     borderWidth: 2,
     justifyContent: "center",
@@ -167,9 +169,9 @@ const styles = StyleSheet.create({
   cameraPanel: { gap: 12 },
   camera: { aspectRatio: 3 / 4, borderRadius: 16, overflow: "hidden", width: "100%" },
   cameraStatus: {
-    backgroundColor: "#FFF3CD",
+    backgroundColor: colors.warningSoft,
     borderRadius: 10,
-    color: "#5C4200",
+    color: colors.warningText,
     fontSize: 16,
     lineHeight: 23,
     padding: 12,

@@ -1,6 +1,6 @@
 # Team Handoff
 
-Current state: Product API v2, Prisma/PostgreSQL persistence, React admin review console, Expo mobile Learn/Navigate flows and the Express live FastAPI adapter are implemented. Device/screen-reader QA, deployment and one real live AI smoke remain pending. FastAPI implementation remains owned by Hồng Phúc.
+Current state: Product API v2, Prisma/PostgreSQL persistence, React admin review console, Expo mobile Learn/Navigate flows, the Express live FastAPI adapter and code/browser accessibility checks are implemented. Device/screen-reader QA, deployment and one real live AI smoke remain pending. FastAPI implementation remains owned by Hồng Phúc.
 
 Application execution is tracked in root `PLAN.md` on branch `codex/application-vertical-slice`. Bảo Anh's implementation order is deterministic domain/API mock first, then PostgreSQL, admin web, mobile and live FastAPI integration. Hồng Phúc's AI-service boundary remains unchanged.
 
@@ -17,6 +17,7 @@ Application progress on 2026-09-22: the graph/BFS/session kernel, every Product 
 - Database schema: Prisma 7.10 schema, migration, constraints, seed and runtime adapter implemented and verified
 - Admin web: landmark review, directed-edge editing, cue replay, publish/outdated and accessible error/status behavior implemented
 - Expo mobile: explicit per-scan camera, Day-1 draft/save, screen-reader origin/destination selection, stale-response suppression, TTS/screen-reader coordination, replay, safety copy and route completion implemented
+- Accessibility evidence: executable palette contrast checks, Edge accessibility-tree/layout smoke and manual device matrices recorded in `docs/ACCESSIBILITY_QA.md`; physical screen-reader runs remain pending
 - Deployment: not started
 
 ## Latest context handoff

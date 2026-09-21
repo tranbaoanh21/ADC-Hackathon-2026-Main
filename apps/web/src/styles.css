@@ -74,15 +74,50 @@ fieldset:disabled {
   text-decoration: none;
 }
 .brand-mark {
+  position: relative;
   display: grid;
   place-items: center;
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 0.85rem;
-  color: var(--navy);
-  background: var(--focus);
-  font-size: 1.6rem;
-  font-weight: 900;
+  color: white;
+  background: var(--teal);
+  border: 2px solid white;
+}
+.brand-path,
+.brand-node {
+  position: absolute;
+  display: block;
+  background: currentColor;
+}
+.brand-path-vertical {
+  top: 0.55rem;
+  left: 0.85rem;
+  width: 0.2rem;
+  height: 1.65rem;
+}
+.brand-path-horizontal {
+  top: 0.68rem;
+  left: 0.95rem;
+  width: 1rem;
+  height: 0.2rem;
+}
+.brand-node {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 50%;
+}
+.brand-node-start {
+  top: 0.42rem;
+  left: 0.68rem;
+}
+.brand-node-middle {
+  top: 0.52rem;
+  left: 1.75rem;
+}
+.brand-node-end {
+  top: 1.93rem;
+  left: 0.68rem;
 }
 .brand strong,
 .brand small {

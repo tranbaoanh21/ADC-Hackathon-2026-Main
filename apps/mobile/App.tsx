@@ -27,6 +27,7 @@ import {
 } from "./src/api";
 import { CapturePanel } from "./src/CapturePanel";
 import { presentNavigationObservation, shouldApplyObservation } from "./src/mobile-state";
+import { colors } from "./src/theme";
 import type {
   CandidateLandmark,
   LandmarkSummary,
@@ -115,6 +116,22 @@ function SafetyNotice() {
         không phát hiện chướng ngại, không khẳng định đường đi an toàn và không thay thế gậy, chó
         dẫn đường hoặc kỹ năng định hướng và di chuyển.
       </Text>
+    </View>
+  );
+}
+
+function LogoMark() {
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={styles.logoMark}
+    >
+      <View style={styles.logoPathVertical} />
+      <View style={styles.logoPathHorizontal} />
+      <View style={[styles.logoNode, styles.logoNodeStart]} />
+      <View style={[styles.logoNode, styles.logoNodeMiddle]} />
+      <View style={[styles.logoNode, styles.logoNodeEnd]} />
     </View>
   );
 }
@@ -368,7 +385,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.canvas} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.flex}
@@ -379,13 +396,7 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.brandRow}>
-            <View
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              style={styles.logoMark}
-            >
-              <Text style={styles.logoText}>P</Text>
-            </View>
+            <LogoMark />
             <View style={styles.flex}>
               <Text accessibilityRole="header" style={styles.brand}>
                 PathMemory
@@ -672,25 +683,50 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: "#F7FAFC", flex: 1 },
+  safeArea: { backgroundColor: colors.canvas, flex: 1 },
   flex: { flex: 1 },
   container: { gap: 18, padding: 22, paddingBottom: 48 },
   brandRow: { alignItems: "center", flexDirection: "row", gap: 14 },
   logoMark: {
     alignItems: "center",
-    backgroundColor: "#006D77",
+    backgroundColor: colors.teal,
     borderRadius: 16,
     height: 56,
     justifyContent: "center",
     width: 56,
   },
-  logoText: { color: "#FFFFFF", fontSize: 30, fontWeight: "800" },
-  brand: { color: "#102A43", fontSize: 26, fontWeight: "800" },
-  tagline: { color: "#52606D", fontSize: 14, lineHeight: 20 },
+  logoPathVertical: {
+    backgroundColor: colors.surface,
+    height: 34,
+    left: 17,
+    position: "absolute",
+    top: 11,
+    width: 4,
+  },
+  logoPathHorizontal: {
+    backgroundColor: colors.surface,
+    height: 4,
+    left: 19,
+    position: "absolute",
+    top: 14,
+    width: 21,
+  },
+  logoNode: {
+    backgroundColor: colors.surface,
+    borderRadius: 6,
+    height: 11,
+    position: "absolute",
+    width: 11,
+  },
+  logoNodeStart: { left: 13, top: 7 },
+  logoNodeMiddle: { left: 35, top: 10 },
+  logoNodeEnd: { left: 13, top: 38 },
+  brand: { color: colors.navy, fontSize: 26, fontWeight: "800" },
+  tagline: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   section: { gap: 16 },
   subsection: { gap: 10, marginTop: 8 },
-  heading: { color: "#102A43", fontSize: 30, fontWeight: "800", lineHeight: 37 },
-  subheading: { color: "#102A43", fontSize: 22, fontWeight: "700", lineHeight: 29 },
+  heading: { color: colors.navy, fontSize: 30, fontWeight: "800", lineHeight: 37 },
+  subheading: { color: colors.navy, fontSize: 22, fontWeight: "700", lineHeight: 29 },
   body: { color: "#334E68", fontSize: 18, lineHeight: 27 },
   label: { color: "#102A43", fontSize: 17, fontWeight: "700" },
   input: {
@@ -712,8 +748,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
-  buttonPrimary: { backgroundColor: "#006D77" },
-  buttonSecondary: { backgroundColor: "#FFFFFF", borderColor: "#006D77", borderWidth: 2 },
+  buttonPrimary: { backgroundColor: colors.teal },
+  buttonSecondary: {
+    backgroundColor: colors.surface,
+    borderColor: colors.teal,
+    borderWidth: 2,
+  },
   buttonPrimaryText: { color: "#FFFFFF", fontSize: 18, fontWeight: "700", textAlign: "center" },
   buttonSecondaryText: { color: "#005760", fontSize: 18, fontWeight: "700", textAlign: "center" },
   disabled: { opacity: 0.5 },

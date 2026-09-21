@@ -384,22 +384,30 @@ Verification on 2026-09-22:
 - `AI_ADAPTER=mock` remains the explicit default for development; `AI_ADAPTER=live` fails fast when URL/token/timeout configuration is invalid.
 - No live claim has been made: FastAPI repository, deployed URL, internal token and model/provider evidence are still required from Hồng Phúc for the end-to-end gate.
 
-### Phase 7 — Brand, accessibility and safety polish
+### Phase 7 — Brand, accessibility and safety polish — `CODE CHECKS COMPLETE; DEVICE QA PENDING`
 
-- [ ] PathMemory wordmark and simple monochrome app mark
-- [ ] Apply locked palette as reusable design tokens
-- [ ] Verify normal text ≥ 4.5:1, large text/UI boundaries ≥ 3:1, critical text target ≥ 7:1
-- [ ] Visible focus and non-color status indicators
-- [ ] Web keyboard/screen-reader checklist
-- [ ] Mobile VoiceOver/TalkBack checklist
+- [x] PathMemory wordmark and simple monochrome app mark
+- [x] Apply locked palette as reusable design tokens
+- [x] Verify normal text ≥ 4.5:1, large text/UI boundaries ≥ 3:1, critical text target ≥ 7:1
+- [x] Visible focus and non-color status indicators
+- [x] Web keyboard/screen-reader checklist recorded; actual screen-reader run pending
+- [x] Mobile VoiceOver/TalkBack checklist recorded; actual device run pending
 - [ ] Text scaling and long Vietnamese/English strings
-- [ ] Privacy notice, camera-active notice and raw-media retention check
-- [ ] Safety wording review: no `safe`, `obstacle-free`, GPS or replacement claims
+- [x] Privacy notice, camera-active notice and raw-media retention check
+- [x] Safety wording review: no `safe`, `obstacle-free`, GPS or replacement claims
 
 Gate:
 
 - Accessibility checklist is recorded with device/browser/screen-reader versions.
 - Logo never replaces an accessible product name.
+
+Verification on 2026-09-22:
+
+- `docs/ACCESSIBILITY_QA.md` records measured/code/browser evidence separately from the pending manual device matrix.
+- Eleven mobile tests pass, including seven palette contrast cases and the focus-boundary contrast case.
+- Edge accessibility tree still exposes the text product name and workflow controls; the decorative topological PathMemory mark is hidden from assistive technology.
+- Desktop screenshot inspection shows the new mark and wordmark without visible clipping or overlap.
+- Phase gate remains open until web screen-reader, mobile VoiceOver/TalkBack, maximum text-size and both physical-camera demo journeys are recorded with versions.
 
 ### Phase 8 — Deployment and demo evidence
 

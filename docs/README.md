@@ -9,6 +9,7 @@ Thư mục này giữ source of truth cho problem, solution scope, evidence và 
 - `PROJECT_STATUS.md`: trạng thái hiện tại, active work và next gate.
 - `HANDOFF.md`: bàn giao giữa thành viên, branch và agent.
 - `TECHNICAL_FLOW.md`: trách nhiệm các tầng, day-one/day-two request flow và repository boundary.
+- `ACCESSIBILITY_QA.md`: evidence đã đo, privacy/safety audit và checklist screen-reader/device còn phải chạy.
 - `THREAD_STARTER_PROMPTS.md`: prompt mẫu cho thread mới của từng vai trò.
 - `diagrams/README.md`: quy tắc PlantUML và render SVG.
 

@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-22
 
-Current phase: `ACCESSIBILITY_AND_DEPLOYMENT_NEXT; LIVE_AI_SMOKE_BLOCKED`
+Current phase: `DEPLOYMENT_PREPARATION_NEXT; DEVICE_AND_LIVE_AI_QA_BLOCKED`
 
 ## Confirmed facts
 
@@ -47,7 +47,7 @@ Current phase: `ACCESSIBILITY_AND_DEPLOYMENT_NEXT; LIVE_AI_SMOKE_BLOCKED`
 
 | Owner | Branch/repository | Task | Status | Contract impact | Blocker |
 |---|---|---|---|---|---|
-| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phases 0–3 complete; web/mobile and Express live adapter implemented; device/screen-reader, deployment and live AI smoke pending | No contract change | FastAPI URL/token needed for live smoke; deployment accounts/phone needed for later gates |
+| Bảo Anh | `codex/application-vertical-slice` | Execute application plan in `PLAN.md`: API → database → web/mobile → integration | Phases 0–3 complete; web/mobile, live adapter and code/browser accessibility checks implemented; deployment, device/screen-reader and live AI smoke pending | No contract change | FastAPI URL/token needed for live smoke; deployment accounts/phone needed for later gates |
 | Hồng Phúc | FastAPI repository `TBD` | Implement `POST /internal/v1/perception` and AI eval | Not started | Must remain AI service 1.1-compatible | Needs latest handoff branch/commit |
 
 ## Next implementation gate
@@ -64,7 +64,7 @@ Current phase: `ACCESSIBILITY_AND_DEPLOYMENT_NEXT; LIVE_AI_SMOKE_BLOCKED`
 
 | Component | Owner | Local | Production | URL/identifier |
 |---|---|---|---|---|
-| Mobile | Bảo Anh | Learn/Navigate camera flow implemented; typecheck, four unit tests and Android production bundle pass; device/VoiceOver/TalkBack QA pending | Not deployed | TBD |
+| Mobile | Bảo Anh | Learn/Navigate camera flow implemented; typecheck, 11 state/contrast tests and Android production bundle pass; device/VoiceOver/TalkBack QA pending | Not deployed | TBD |
 | Web review console | Bảo Anh | Review/edit edges/publish/outdated UI implemented; Edge AX-tree smoke and build pass; actual screen-reader QA pending | Not deployed | TBD |
 | Express API | Bảo Anh | Product API v2 with graph/BFS/session policy, in-memory/Prisma persistence, deterministic mock and contract-compatible live FastAPI adapter; 42 tests pass, 3 database tests conditionally skipped without test DB | Not deployed | TBD |
 | PostgreSQL | Bảo Anh | Prisma schema/migration/seed and repository verified on isolated PostgreSQL; 32 total tests pass | Not provisioned | Secret; never record connection string here |
@@ -81,6 +81,6 @@ Current phase: `ACCESSIBILITY_AND_DEPLOYMENT_NEXT; LIVE_AI_SMOKE_BLOCKED`
 | Product and AI contracts | Product API 2.0.0 and AI service 1.1.0 documented |
 | Working golden path | Both routes pass API-level mock tests; Product API also passes through PostgreSQL; web and mobile flows are implemented, but physical-device E2E is pending |
 | AI evaluation | Not started |
-| Accessibility verification | Not started |
+| Accessibility verification | Contrast tests and Edge accessibility-tree/layout smoke pass; physical VoiceOver/TalkBack, maximum text-size and camera flow remain pending in `docs/ACCESSIBILITY_QA.md` |
 | Latency/reliability/cost | Not measured |
 | Submission deck/video | Official template available; content not started |
