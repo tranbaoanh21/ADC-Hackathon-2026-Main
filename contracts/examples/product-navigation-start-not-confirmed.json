@@ -11,7 +11,7 @@
     "displayOrder": 0,
     "type": "RECEPTION"
   },
-  "spokenMessage": "Chưa xác nhận được Reception. Hãy đứng yên, hướng camera về biển Reception và quét lại.",
+  "spokenMessage": "Chưa nhận ra Quầy lễ tân. Hãy hướng máy ảnh về biển chỉ dẫn và quét lại.",
   "shouldAdvance": false,
   "retryAllowed": true
 }

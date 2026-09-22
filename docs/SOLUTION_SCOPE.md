@@ -1,213 +1,142 @@
-# Solution Scope
+# PathMemory Solution Scope
 
-Status: `CONFIRMED — STAGE_4_LANDMARK_GRAPH_MVP`
+Status: `CONFIRMED FOR MVP`
 
-Last updated: `2026-09-21`
+Last updated: `2026-09-22`
 
-## Decision classification
+## Problem framing
 
-### Official or brief-reported evidence
+### Official evidence
 
-- Stage 4 includes the difficulty of locating offices, canteens and restrooms during workplace onboarding.
-- Guided physical orientation and buddy systems are not standard practice in every organisation.
-- The brief identifies digital access as the more critical Stage 4 barrier. Choosing physical orientation is a deliberate narrow team decision, not a claim that it is the largest Stage 4 barrier.
+Stage 4 of the competition brief reports that blind or low-vision employees may need more time and guided support to find workplace facilities, while inaccessible internal documents and systems can also affect onboarding and probation. Full source classification remains in `docs/COMPETITION_BRIEF.md`.
 
 ### Team decision
 
-- Primary product: Expo mobile application for a blind or low-vision new employee.
-- Secondary product: small accessible React web console for a human admin/buddy.
-- Day 1 creates a bounded workplace landmark graph from a guided walk with a buddy.
-- Mobile Learn is the only Day-1 graph creator. Web opens that same draft using the Route ID shown on mobile; it does not create a parallel graph.
-- AI proposes landmark drafts. Express validates and stores each accepted proposal immediately as `AI_DRAFT`; admin approval is a later state transition, not the first database write.
-- Admin/buddy edits and verifies landmarks, then creates directed `RouteEdge` records by selecting from/to landmarks and a relative maneuver. Express derives the spoken instruction; the buddy does not author it.
-- Day 2 onward, the employee uses a screen reader to select a published origin landmark and a reachable destination landmark. Express computes a deterministic path over the published graph.
-- The mobile camera must confirm the selected origin before the first movement cue is announced. Later observations confirm progress at the next expected landmark.
-- Landmark position is topological only. No exact indoor coordinate, metric distance or angle is stored.
-- The cane, guide dog or orientation-and-mobility technique remains the user's safety and obstacle-awareness tool. PathMemory supplies workplace memory and orientation cues only.
+PathMemory deliberately addresses a narrow physical-orientation slice of Stage 4:
 
-### Assumptions requiring validation
+> A blind or low-vision new employee needs a reusable way to learn familiar indoor workplace journeys after an initial supported walkthrough, without relying on exact indoor coordinates.
 
-- A verified landmark graph will reduce repeated dependence on a colleague for familiar short workplace journeys.
-- A chest-mounted phone can capture sufficiently readable signs for the controlled demo.
-- Users can identify or confirm an origin landmark before starting a navigation session.
-- A human reviewer is available during onboarding to correct landmark names and relative cues.
-- An unweighted fewest-edge path is understandable and useful for the bounded demo graph; it is not yet evidence of the easiest or safest physical path.
+This is a product hypothesis, not proof that physical orientation is the highest-priority Stage 4 barrier. End-user validation remains required.
 
-## Problem
+### Primary user and context
 
-- Primary user: a blind or low-vision employee during the first days in a new workplace.
-- Workplace context: learning and later repeating short indoor journeys among stable places such as reception, an elevator area, a meeting room and a restroom.
-- Specific barrier: visual landmarks and relative turns used by sighted colleagues are not independently available to the employee as persistent, accessible workplace knowledge.
-- Existing workaround: a colleague repeatedly guides the employee or verbally explains each journey from memory.
-- Product gap: generic scene description can describe what is visible now, but it does not create a human-verified, reusable relationship between workplace landmarks.
-
-## Proposed outcome
-
-After one guided onboarding walk, the workplace has a small published graph of stable landmarks and reviewed relative cues. On later days, the employee can select where they are and where they want to go, confirm the starting landmark with the camera, and receive speech for each verified graph edge until the chosen destination is reached.
-
-This is not free-form indoor navigation. It is repeatable orientation within a bounded, previously reviewed graph.
+- Primary user: a blind or low-vision employee onboarding in a new workplace.
+- Day 1 context: the employee explores a bounded area with a colleague or Human Resources representative.
+- Day 2+ context: the employee repeats familiar journeys between reviewed points of interest.
+- Existing mobility aid: cane, guide dog or orientation-and-mobility skills remain primary for obstacle awareness and safe movement.
 
 ## Golden path
 
-### Day 1 — Learn, review and publish
+### Day 1 — build and review a workplace graph
 
-```text
-Employee and human buddy start a LEARN session
-→ chest-mounted mobile camera sends a small sampled-frame observation
-→ FastAPI returns structured perception and landmark candidates
-→ employee/buddy explicitly saves only a useful, stable candidate
-→ Express validates, deduplicates and stores an AI_DRAFT in PostgreSQL
-→ repeat for the bounded demo area
-→ buddy enters the mobile-created Route ID on the accessible admin web
-→ web reloads and lists the drafts already stored by Express
-→ admin edits and marks each accepted landmark BUDDY_VERIFIED
-→ admin creates directed edges using from-landmark, to-landmark
-  and maneuver dropdowns; narration is generated deterministically
-→ Express validates graph references/topology
-→ admin publishes the verified landmark graph
-```
+1. Employee starts Explore mode with a screen reader, then wears the phone chest-mounted.
+2. Mobile automatically captures sequential observations with request backpressure; no per-frame capture/save control is required.
+3. Express sends one to three ephemeral frames to FastAPI.
+4. FastAPI/Gemini returns structured landmark perception only.
+5. Express validates, deduplicates and stores useful candidates as `AI_DRAFT` nodes.
+6. Employee explicitly chooses **Finish exploring** when the supported walkthrough is complete.
+7. Colleague/HR selects the workplace by recognisable name on web, verifies landmark names and stable descriptions, and creates directed edges using from/to/maneuver.
+8. Express validates and publishes the graph. Narration is generated deterministically; no authored spoken cue is stored.
 
-### Day 2 onward — Select and navigate
+### Day 2+ — replay a familiar journey
 
-```text
-Employee opens a published graph with a screen reader
-→ selects an origin landmark
-→ Express returns only destinations reachable through published directed edges
-→ employee selects a destination
-→ Express computes a deterministic FEWEST_EDGES path using BFS
-→ NAVIGATE session starts in AWAITING_START_CONFIRMATION
-→ camera observation must match the selected origin landmark
-→ after confirmation, mobile speaks the first reviewed RouteEdge cue
-→ at each next landmark, FastAPI returns perception and Express performs matching
-→ a match advances currentPathIndex and speaks the next edge cue
-→ insufficient/conflicting evidence returns STOP_AND_RESCAN without advancing
-→ matching the selected destination completes the session
-```
+1. Employee opens a published workplace with a screen reader.
+2. Employee selects an origin; Express returns only reachable destinations.
+3. Employee selects a destination; Express computes deterministic unweighted BFS.
+4. Camera observation must confirm the selected origin before the first instruction.
+5. Each later observation is matched only against the next expected landmark.
+6. A valid match advances one edge and returns the next EN/VI narration.
+7. Insufficient, conflicting or stale evidence returns `STOP_AND_RESCAN` without advancing.
+8. Matching the destination completes the journey.
 
-`Day 1` and `Day 2 onward` describe the employee journey, not the hackathon schedule.
+## Graph semantics
 
-## Landmark graph rules
+- A workplace contains many landmark nodes; the demo fixture uses four, but API/database/UI do not impose that limit.
+- An edge is directional. `A → B` and `B → A` are separate records.
+- Maneuver belongs to the edge: `GO_STRAIGHT`, `TURN_LEFT`, `TURN_RIGHT`, `TAKE_ELEVATOR`, `ENTER_DOOR` or `OTHER`.
+- `displayOrder` is system-managed for stable ordering and deterministic BFS tie-breaking; it is not a coordinate or admin concept.
+- Equal-length paths are resolved by edge `displayOrder`, then edge ID.
+- The result is fewest edges, not shortest physical distance, easiest route or safest route.
+- Canonical facing direction and orientation cues are deferred for this MVP.
 
-A landmark is eligible only when it is stable, useful for orientation, distinguishable by visible text or features, and human verified. People, movable furniture and temporary objects are excluded.
+## AI versus deterministic code
 
-- A landmark may have many incoming and outgoing edges.
-- Each edge is directed: `A → B` and `B → A` are separate records and may have different maneuvers/cues.
-- A relative maneuver belongs to the edge, never permanently to either landmark.
-- `displayOrder` controls stable admin and screen-reader list order only; it is not a coordinate or path sequence.
-- Express rejects self-loops, duplicate directed pairs and references outside the graph.
-- Express lists only destinations reachable from the selected origin.
-- Express computes navigation with deterministic unweighted BFS. Equal-length paths are resolved deterministically by edge `displayOrder`, then edge ID.
-- AI may propose uniqueness, but Express and the admin own deduplication and approval.
+| Layer | Responsibility |
+|---|---|
+| FastAPI/Gemini | Frame quality, visible text, scene interpretation, structured landmark candidates, uncertainty |
+| Express | Validation, IDs, deduplication, persistence, review/publish policy, graph validation, BFS, expected-landmark matching, session state, EN/VI narration |
+| PostgreSQL | Structured workplaces, landmarks, directed edges, observations, sessions and review metadata |
+| Mobile/web | Accessible explore, review, selection and guidance UI; clients call Express only |
 
-## Why AI and what remains deterministic
+AI does not decide connectivity, maneuver, route, advancement or safety. Raw provider output is untrusted until validated.
 
-### AI/FastAPI
+## Failure safeguards
 
-- Receives one to three ephemeral sampled frames for one observation.
-- Checks frame quality and interprets uncontrolled camera scenes.
-- Reads visible signs and proposes structured landmark names, types, descriptions and stable features.
-- Returns perception only; it does not know the final product action or graph path.
+- Unreadable, low-quality, conflicting or mismatched evidence never advances a journey.
+- Origin must be confirmed before the first movement instruction.
+- Stale responses are ignored.
+- Every reusable landmark and edge is human-reviewed before publication.
+- Raw images/video are not retained by default.
+- The product never claims obstacle detection, safe passage or replacement of mobility aids.
 
-### Deterministic Express code
-
-- Validates AI output and applies timeout/stale-response rules.
-- Owns IDs, database writes, duplicate checks and status transitions.
-- Owns human-review and publish permissions.
-- Owns graph validation, reachability, BFS path planning and session state.
-- Matches evidence only against the current expected landmark.
-- Decides whether to advance, retry, stop-and-rescan or complete.
-
-### Failure safeguard
-
-A wrong match could misorient the user. Therefore PathMemory never advances on unreadable, insufficient or conflicting evidence; requires human verification before publish; confirms the selected origin before the first cue; ignores stale responses; and never states that a path is safe or obstacle-free.
-
-## MVP
+## MVP and non-goals
 
 ### Must have
 
-- Expo mobile Learn and Navigate modes with accessible controls, TTS, replay, loading, timeout and error announcements.
-- Structured perception through Express → FastAPI → hosted vision model.
-- One bounded demo graph with four landmarks and one branch: Reception, Elevator Level 2, Meeting Room A and Restroom Level 2.
-- Human-reviewed directed edges that support Reception → Meeting Room A and Reception → Restroom Level 2, plus return travel in the demo fixture.
-- Accessible React web review: list/edit/verify landmarks; choose from/to landmarks and maneuver; edit cue; publish or mark outdated.
-- PostgreSQL persistence for graph, landmarks, directed edges, sessions, observations and reviews.
-- Screen-reader origin/destination selection and reachable-destination filtering.
-- Deterministic BFS path planning and start-landmark confirmation.
-- Landmark states: `AI_DRAFT`, `BUDDY_VERIFIED`, `PUBLISHED`, `OUTDATED`.
-- `STOP_AND_RESCAN`, provider error and deterministic mock paths.
-- No hard-coded total-landmark limit in API/database/UI.
-
-### Nice to have
-
-- Haptic patterns paired with spoken status.
-- Route-outdated workflow and read-only cache of the last published graph.
-- Camera-restricted-area notice.
-- Friendly graph completeness warnings in the admin web.
+- Accessible EN/VI Expo Explore and Navigate flows.
+- Controlled automatic camera capture and explicit Finish Exploring action.
+- React colleague/HR review by workplace name.
+- Human verification of landmarks and directed structured maneuvers.
+- PostgreSQL persistence and Product API v3.1.
+- FastAPI AI-service v1.1 with mock/live-compatible schema.
+- Reachability, deterministic BFS, origin confirmation and `STOP_AND_RESCAN`.
+- Loading, timeout, retry and accessible status/error behavior.
 
 ### Non-goals
 
-- Exact indoor coordinates, metric distance or exact angle calculation.
-- GPS-like free-form or general-purpose indoor navigation.
-- Dynamic rerouting from an unknown location, weighted route optimisation or claims of the easiest/fastest/safest path.
-- QR/AprilTag anchors, SLAM, ARKit/ARCore mapping, BLE or UWB positioning.
-- Obstacle avoidance, hazard detection or `safe to proceed` decisions.
-- Replacing a cane, guide dog or orientation-and-mobility skills.
-- Automatically saving every detected object or mapping the entire workplace.
-- Multiple workplace graphs in the judged demo.
-- RAG, vector database, fine-tuning, self-hosted GPU or full HR dashboard.
-- Raw image/video retention.
-- Authentication/OAuth unless later required by the deployed demo.
+- Exact indoor coordinates, distances, angles, heading degrees or sensor fusion.
+- GPS-like free-form navigation or rerouting from an unknown location.
+- QR/AprilTag, SLAM, ARKit/ARCore, BLE or UWB.
+- Obstacle/hazard detection or safety guarantee.
+- Automatically inferred edges or maneuvers.
+- Raw-media retention, RAG/vector database, fine-tuning or self-hosted GPU.
+- Full HR platform or complex authentication.
 
 ## Success metrics
 
-Targets are hypotheses until measured and must not be presented as achieved results.
+Targets remain hypotheses until measured.
 
-| Metric | Definition | Target/hypothesis | Evidence method |
-|---|---|---|---|
-| Navigation task success | Select origin/destination, confirm start and reach the chosen final landmark | Both demo journeys complete without buddy intervention during replay | Script Reception → Meeting Room A and Reception → Restroom Level 2 |
-| Path correctness | Planned landmark/edge IDs match the expected BFS result | 100% of graph fixture origin/destination cases | Deterministic unit tests |
-| Start confirmation safety | Wrong/unclear start observation does not issue the first movement cue | 100% of defined negative cases | Contract/integration tests |
-| Critical landmark extraction | Expected visible text/name extracted for representative landmark frames | At least 9 of 10 controlled cases | Fixed ground-truth eval set |
-| Schema validity | AI responses accepted by the shared schema | 100% of recorded eval responses | Contract validation |
-| Safe uncertainty behavior | Ambiguous/unreadable cases do not advance | 100% of defined negative cases | Fixed negative cases |
-| Accessibility | Core Learn/Review/Navigate controls are operable and status is announced | Complete mobile flow with VoiceOver/TalkBack and web review by keyboard/screen reader | Recorded checklist |
-| End-to-end latency | Capture action to beginning of spoken result | P95 at or below 5 seconds in demo conditions | Instrumented requests; report P50/P95 |
-| Reliability | Consecutive complete golden-path runs | At least two consecutive runs | Production smoke test |
-| Raw-media retention | Raw images/videos stored after processing | Zero | Storage/log review |
+| Metric | Target | Evidence |
+|---|---:|---|
+| Demo journey task success | Both fixed journeys complete without colleague/HR intervention during replay | Physical-device run |
+| BFS path correctness | 100% of defined graph fixtures | Unit/integration tests |
+| Wrong/unclear origin safety | 100% do not emit first movement cue | Negative tests |
+| AI schema validity | 100% of recorded eval cases | Fixed eval set |
+| Critical landmark extraction | At least 9/10 controlled cases | Ground-truth review |
+| Safe uncertainty | 100% of defined ambiguous cases do not advance | Negative cases |
+| Accessibility | Core flows operable with screen reader and maximum text size | Recorded checklist |
+| End-to-end latency | P95 ≤ 5 seconds in demo conditions | Instrumented runs |
+| Reliability | Two consecutive complete production runs | Smoke test |
+| Raw-media retention | Zero retained frames/videos | Code/storage/log review |
 
-## Client and architecture decision
+## Universal Design review
 
-```text
-Expo mobile / React web
-          ↓ public HTTPS
-Express application backend
-    ├── PostgreSQL
-    ↓ internal HTTPS
-FastAPI AI service
-    ↓
-Hosted vision provider
-```
+The seven principles remain product review questions, not automatic compliance claims:
 
-- Mobile is the primary employee client; web is a small admin/buddy console.
-- Express is the only public API and owns all product/database/graph behavior.
-- FastAPI is an internal perception service owned by Hồng Phúc.
-- Canonical interfaces are `contracts/product-api.openapi.yaml` v3.0.0 and `contracts/ai-service.openapi.yaml` v1.1.0. The Product API retains the current `/api/v2` prototype route namespace.
+| Principle | PathMemory application |
+|---|---|
+| Equitable Use | Screen-reader-first controls; essential status is not visual-only |
+| Flexibility in Use | EN/VI, screen reader and optional app speech cooperate |
+| Simple and Intuitive | One narrow Explore flow and one Navigate flow |
+| Perceptible Information | Spoken, textual and state feedback communicate the same outcome |
+| Tolerance for Error | Human review, start confirmation and stop-and-rescan prevent unsafe advancement |
+| Low Physical Effort | Chest-mounted automatic capture avoids repeated per-frame tapping |
+| Size and Space for Approach and Use | Large touch targets and scalable layouts support low vision and one-handed setup |
 
-## Privacy and safety
+## Contracts and ownership
 
-- Only selected ephemeral frames required for the current observation are sent to the external provider.
-- Stored data is structured graph, landmark, observation summary, review state and model/eval metadata.
-- Raw image/audio retention is zero by default.
-- Employee and workplace must know when camera processing is active; camera-restricted areas must be respected.
-- Every landmark and edge cue must be human reviewed before publication.
-- Changed layouts, unreadable signs, crowded/poor-light scenes, provider failure and unreviewed/outdated graphs are unsupported or stop conditions.
-
-## Ownership
-
-| Area | Owner | Deliverable |
-|---|---|---|
-| Mobile, web, Express and PostgreSQL | Bảo Anh | Clients, Product API v3, graph/path/session/narration logic, persistence, AI adapter, accessibility and application deployment |
-| FastAPI and model pipeline | Hồng Phúc | AI-service v1.1, preprocessing, provider adapter, structured perception, AI tests/eval and AI-service deployment |
-| Shared AI boundary | Bảo Anh + Hồng Phúc | Compatible OpenAPI, examples, validators and integration tests |
-| Admin/buddy review | Bảo Anh | Accessible landmark/edge review and graph publication |
-| Research and pitch evidence | Team owner TBD | End-user validation, assumptions, deck, video and Q&A |
+- Product API: `contracts/product-api.openapi.yaml` v3.1.0 on `/api/v2`.
+- AI service: `contracts/ai-service.openapi.yaml` v1.1.0.
+- Bảo Anh owns clients, Express, database, product rules and integration.
+- Hồng Phúc owns FastAPI, provider/model pipeline and AI eval.
+- Both owners approve changes to the AI boundary.

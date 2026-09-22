@@ -124,6 +124,18 @@ export const landmarkSummarySchema = z
   })
   .strict();
 
+export const workplaceSummarySchema = z
+  .object({
+    id: uuidSchema,
+    name: z.string().min(1).max(100),
+    status: z.enum(["DRAFT", "PUBLISHED", "OUTDATED"]),
+    landmarkCount: z.number().int().min(0),
+    createdAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+
+export const workplaceSummaryListSchema = z.array(workplaceSummarySchema);
+
 export const landmarkSchema = z
   .object({
     id: uuidSchema,

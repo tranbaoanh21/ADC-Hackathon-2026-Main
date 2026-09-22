@@ -52,6 +52,14 @@ export interface WorkplaceGraph {
   readonly publishedAt: string | null;
 }
 
+export interface WorkplaceSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly status: WorkplaceGraph["status"];
+  readonly landmarkCount: number;
+  readonly createdAt: string;
+}
+
 interface ProductErrorBody {
   readonly error?: {
     readonly code?: string;
@@ -95,6 +103,9 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const productApi = {
+  listRoutes() {
+    return apiRequest<readonly WorkplaceSummary[]>("/api/v2/routes");
+  },
   getRoute(routeId: string) {
     return apiRequest<WorkplaceGraph>(`/api/v2/routes/${encodeURIComponent(routeId)}`);
   },

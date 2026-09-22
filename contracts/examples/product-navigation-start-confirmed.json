@@ -11,7 +11,7 @@
     "displayOrder": 1,
     "type": "ELEVATOR_AREA"
   },
-  "spokenMessage": "Đã xác nhận Reception. Đi thẳng để tìm biển Level 2 cạnh thang máy.",
+  "spokenMessage": "Đã xác nhận Quầy lễ tân. Đi thẳng đến Khu vực thang máy tầng 2.",
   "shouldAdvance": true,
   "retryAllowed": true
 }

@@ -54,6 +54,21 @@ function attachObservation(
 }
 
 describe("PathMemory Product API v3 contract", () => {
+  it("lists workplace summaries without requiring route IDs from the admin", async () => {
+    const response = await request(createApp()).get("/api/v2/routes");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      {
+        id: demoGraph.id,
+        name: demoGraph.name,
+        status: demoGraph.status,
+        landmarkCount: demoGraph.landmarks.length,
+        createdAt: demoGraph.createdAt,
+      },
+    ]);
+  });
+
   it("returns the published graph and deterministic reachable destinations", async () => {
     const app = createApp();
 
@@ -197,7 +212,7 @@ describe("PathMemory Product API v3 contract", () => {
     );
     expect(destination.body.routeState).toBe("ROUTE_COMPLETED");
     expect(destination.body.shouldAdvance).toBe(true);
-    expect(destination.body.spokenMessage).toContain("Restroom Level 2");
+    expect(destination.body.spokenMessage).toContain("Nhà vệ sinh tầng 2");
   });
 
   it("rejects duplicate and stale observations before invoking AI again", async () => {

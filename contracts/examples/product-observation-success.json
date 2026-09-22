@@ -12,7 +12,7 @@
     "draftDescription": "Khu vực thang máy có biển LEVEL 2."
   },
   "expectedLandmark": null,
-  "spokenMessage": "Đã nhận diện khu vực thang máy với biển Level 2. Bạn có thể lưu landmark này.",
+  "spokenMessage": "Đã nhận diện Khu vực thang máy tầng 2. Điểm mốc này sẽ được lưu để đồng nghiệp hoặc bộ phận Nhân sự duyệt.",
   "shouldAdvance": false,
   "retryAllowed": true
 }

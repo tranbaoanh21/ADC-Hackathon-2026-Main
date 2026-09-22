@@ -43,4 +43,18 @@ describe("mobile observation guards", () => {
     expect(presentNavigationObservation(observation("SEEKING_LANDMARK")).completed).toBe(false);
     expect(presentNavigationObservation(observation("ROUTE_COMPLETED")).completed).toBe(true);
   });
+
+  it("removes mixed English landmark terms from Vietnamese announcements", () => {
+    const result = presentNavigationObservation(
+      observation(
+        "SEEKING_LANDMARK",
+        "Đã xác nhận Reception. Đi thẳng đến Elevator Level 2, landmark tiếp theo.",
+      ),
+      "vi",
+    );
+
+    expect(result.message).toBe(
+      "Đã xác nhận Quầy lễ tân. Đi thẳng đến Khu vực thang máy tầng 2, điểm mốc tiếp theo.",
+    );
+  });
 });

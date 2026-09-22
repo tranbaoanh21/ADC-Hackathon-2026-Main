@@ -34,7 +34,7 @@ export function createApp(dependencies: AppDependencies = {}) {
     response.status(200).json({
       status: "ok",
       service: "pathmemory-api",
-      productApiVersion: "3.0.0",
+      productApiVersion: "3.1.0",
     });
   });
 

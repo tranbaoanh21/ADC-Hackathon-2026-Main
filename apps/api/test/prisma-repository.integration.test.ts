@@ -49,6 +49,13 @@ describeDatabase("PrismaProductRepository", () => {
     await repository.disconnect();
 
     repository = createPrismaProductRepository(connectionString);
+    expect(await repository.listGraphs()).toContainEqual({
+      id: demoGraph.id,
+      name: demoGraph.name,
+      status: demoGraph.status,
+      landmarkCount: demoGraph.landmarks.length,
+      createdAt: "2026-09-21T02:00:00.000Z",
+    });
     expect(await repository.getGraph(demoGraph.id)).toEqual({
       ...demoGraph,
       createdAt: "2026-09-21T02:00:00.000Z",

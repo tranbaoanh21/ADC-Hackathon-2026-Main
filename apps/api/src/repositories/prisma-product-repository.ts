@@ -6,6 +6,7 @@ import type {
   ProductSession,
   StoredObservation,
   WorkplaceGraph,
+  WorkplaceSummary,
 } from "../domain/types.js";
 import { Prisma, PrismaClient, type RouteSession } from "../generated/prisma/client.js";
 import { aiPerceptionSchema, navigationPathSchema } from "../http/schemas.js";
@@ -102,6 +103,26 @@ export class PrismaProductRepository implements ProductRepository {
 
   async disconnect(): Promise<void> {
     await this.client.$disconnect();
+  }
+
+  async listGraphs(): Promise<readonly WorkplaceSummary[]> {
+    const records = await this.client.route.findMany({
+      orderBy: [{ createdAt: "desc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        _count: { select: { landmarks: true } },
+      },
+    });
+    return records.map((record) => ({
+      id: record.id,
+      name: record.name,
+      status: record.status,
+      landmarkCount: record._count.landmarks,
+      createdAt: record.createdAt.toISOString(),
+    }));
   }
 
   async getGraph(routeId: string): Promise<WorkplaceGraph | null> {

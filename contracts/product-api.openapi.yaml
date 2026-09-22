@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PathMemory Product API
-  version: 3.0.0
+  version: 3.1.0
   description: >-
     Public API owned by the Express application backend. Mobile and web call
     this API only. AI perception is internal and never exposed directly to a
@@ -15,6 +15,22 @@ tags:
   - name: Review
 paths:
   /api/v2/routes:
+    get:
+      tags: [Routes]
+      summary: List workplace maps available to the admin console
+      operationId: listRoutes
+      responses:
+        '200':
+          description: Workplace summaries returned without requiring an admin to enter an ID
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkplaceSummary'
+              examples:
+                workplaceList:
+                  externalValue: ./examples/product-workplace-list.json
     post:
       tags: [Routes]
       summary: Create one draft workplace landmark graph
@@ -386,6 +402,27 @@ components:
             timeout:
               externalValue: ./examples/product-provider-timeout.json
   schemas:
+    WorkplaceSummary:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, landmarkCount, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, OUTDATED]
+        landmarkCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
     CreateRouteRequest:
       type: object
       additionalProperties: false

@@ -37,6 +37,7 @@ import {
   startSessionRequestSchema,
   uuidSchema,
   workplaceGraphSchema,
+  workplaceSummaryListSchema,
 } from "./schemas.js";
 
 const uploadFrames = multer({
@@ -113,6 +114,11 @@ export function createProductRouter(dependencies: ProductRouterDependencies): Ro
   const { repository, aiAdapter } = dependencies;
   const now = dependencies.now ?? (() => new Date().toISOString());
   const newId = dependencies.newId ?? randomUUID;
+
+  router.get("/routes", async (_request, response) => {
+    const graphs = await repository.listGraphs();
+    response.json(workplaceSummaryListSchema.parse(graphs));
+  });
 
   router.post("/routes", async (request, response) => {
     const input = parseBody(createRouteRequestSchema, request.body);

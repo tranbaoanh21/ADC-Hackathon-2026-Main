@@ -1,10 +1,14 @@
 import { type CameraType, CameraView, useCameraPermissions } from "expo-camera";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { announceMessage } from "./accessible-speech";
 import { type Language, mobileCopy } from "./i18n";
 import { colors } from "./theme";
+
+const FIRST_CAPTURE_DELAY_MS = 900;
+const NEXT_CAPTURE_DELAY_MS = 2200;
+const BUSY_RETRY_DELAY_MS = 500;
 
 interface CapturePanelProps {
   readonly busy: boolean;
@@ -17,29 +21,81 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
   const copy = mobileCopy[language];
   const camera = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const [facing] = useState<CameraType>("back");
 
-  async function capture() {
-    if (!camera.current || !cameraReady || busy) return;
-    const picture = await camera.current.takePictureAsync({
-      quality: 0.65,
-      exif: false,
-      base64: false,
-      skipProcessing: false,
-    });
-    if (!picture?.uri) return;
-    setCameraOpen(false);
-    setCameraReady(false);
-    await announceMessage(copy.cameraProcessingAnnouncement, language);
-    await onCapture(picture.uri);
+  const mounted = useRef(true);
+  const ready = useRef(false);
+  const running = useRef(false);
+  const busyRef = useRef(busy);
+  const captureHandler = useRef(onCapture);
+  const copyRef = useRef(copy);
+  const languageRef = useRef(language);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    busyRef.current = busy;
+    captureHandler.current = onCapture;
+    copyRef.current = copy;
+    languageRef.current = language;
+  }, [busy, copy, language, onCapture]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      ready.current = false;
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
+  function scheduleCapture(delay: number) {
+    if (!mounted.current || !ready.current) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => void captureFrame(), delay);
+  }
+
+  async function captureFrame() {
+    if (!mounted.current || !ready.current || running.current) return;
+    if (busyRef.current) {
+      scheduleCapture(BUSY_RETRY_DELAY_MS);
+      return;
+    }
+
+    running.current = true;
+    setCapturing(true);
+    setCameraError("");
+    try {
+      const picture = await camera.current?.takePictureAsync({
+        quality: 0.65,
+        exif: false,
+        base64: false,
+        skipProcessing: false,
+      });
+      if (picture?.uri) await captureHandler.current(picture.uri);
+    } catch {
+      if (mounted.current) {
+        const message = copyRef.current.cameraCaptureError;
+        setCameraError(message);
+        await announceMessage(message, languageRef.current);
+      }
+    } finally {
+      running.current = false;
+      if (mounted.current) {
+        setCapturing(false);
+        scheduleCapture(NEXT_CAPTURE_DELAY_MS);
+      }
+    }
   }
 
   function handleCameraReady() {
-    if (cameraReady) return;
+    if (ready.current) return;
+    ready.current = true;
     setCameraReady(true);
     void announceMessage(copy.cameraReadyAnnouncement, language);
+    scheduleCapture(FIRST_CAPTURE_DELAY_MS);
   }
 
   if (!permission) {
@@ -70,39 +126,34 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
     );
   }
 
-  if (!cameraOpen) {
-    return (
-      <View style={styles.panel}>
-        <View style={styles.stepTag}>
-          <Text style={styles.stepTagText}>{copy.cameraClosed}</Text>
-        </View>
-        <Text style={styles.help}>{purpose}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={copy.cameraOpenLabel}
-          accessibilityHint={copy.cameraOpenHint}
-          disabled={busy}
-          onPress={() => setCameraOpen(true)}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            busy && styles.disabled,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.primaryButtonText}>{busy ? copy.processing : copy.openCamera}</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.cameraPanel}>
-      <View accessibilityLiveRegion="polite" style={styles.cameraStatus}>
-        <Text style={styles.cameraStatusTitle}>
-          {cameraReady ? copy.cameraReady : copy.cameraStarting}
-        </Text>
-        <Text style={styles.cameraStatusText}>{copy.cameraPositionHelp}</Text>
+      <View
+        accessible
+        accessibilityLabel={`${cameraReady ? copy.cameraReady : copy.cameraStarting}. ${purpose}`}
+        style={styles.cameraStatus}
+      >
+        <View style={styles.statusHeading}>
+          <ActivityIndicator
+            accessibilityElementsHidden
+            color={colors.blue}
+            importantForAccessibility="no"
+            size="small"
+          />
+          <Text style={styles.cameraStatusTitle}>
+            {cameraReady ? copy.cameraReady : copy.cameraStarting}
+          </Text>
+        </View>
+        <Text style={styles.cameraStatusText}>{purpose}</Text>
+        <Text style={styles.cameraStatusMeta}>{copy.cameraPositionHelp}</Text>
       </View>
+
+      {cameraError ? (
+        <View accessibilityLiveRegion="assertive" accessibilityRole="alert" style={styles.errorBox}>
+          <Text style={styles.errorText}>{cameraError}</Text>
+        </View>
+      ) : null}
+
       <CameraView
         accessibilityElementsHidden
         facing={facing}
@@ -111,33 +162,16 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
         ref={camera}
         style={styles.camera}
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityHint={copy.captureHint}
-        accessibilityLabel={copy.captureLandmark}
-        disabled={!cameraReady || busy}
-        onPress={() => void capture()}
-        style={({ pressed }) => [
-          styles.captureButton,
-          (!cameraReady || busy) && styles.disabled,
-          pressed && styles.pressed,
-        ]}
-      >
-        <Text style={styles.primaryButtonText}>
-          {cameraReady ? copy.captureLandmark : copy.cameraStartingButton}
-        </Text>
-      </Pressable>
-      <Pressable
-        accessibilityLabel={copy.closeCamera}
-        accessibilityRole="button"
-        onPress={() => {
-          setCameraOpen(false);
-          setCameraReady(false);
-        }}
-        style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
-      >
-        <Text style={styles.secondaryButtonText}>{copy.closeCamera}</Text>
-      </Pressable>
+
+      {capturing ? (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          style={styles.capturePulse}
+        >
+          <ActivityIndicator color={colors.tealDark} size="small" />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -153,14 +187,6 @@ const styles = StyleSheet.create({
   },
   panelTitle: { color: colors.navy, fontSize: 22, fontWeight: "700" },
   help: { color: colors.muted, fontSize: 17, lineHeight: 26 },
-  stepTag: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.tealSoft,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  stepTagText: { color: colors.tealDark, fontSize: 13, fontWeight: "800" },
   primaryButton: {
     alignItems: "center",
     backgroundColor: colors.blue,
@@ -170,28 +196,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
-  captureButton: {
-    alignItems: "center",
-    backgroundColor: colors.blue,
-    borderColor: colors.navy,
-    borderRadius: 12,
-    borderWidth: 3,
-    justifyContent: "center",
-    minHeight: 60,
-    padding: 14,
-  },
   primaryButtonText: { color: colors.surface, fontSize: 18, fontWeight: "700" },
-  secondaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.blue,
-    borderRadius: 12,
-    borderWidth: 2,
-    justifyContent: "center",
-    minHeight: 52,
-    padding: 12,
-  },
-  secondaryButtonText: { color: colors.blueDark, fontSize: 17, fontWeight: "700" },
   cameraPanel: { gap: 12 },
   camera: {
     aspectRatio: 3 / 4,
@@ -205,11 +210,27 @@ const styles = StyleSheet.create({
     borderColor: "#B2DDFF",
     borderRadius: 12,
     borderWidth: 1,
-    gap: 4,
+    gap: 6,
     padding: 14,
   },
+  statusHeading: { alignItems: "center", flexDirection: "row", gap: 9 },
   cameraStatusTitle: { color: colors.infoText, fontSize: 17, fontWeight: "800" },
-  cameraStatusText: { color: colors.navy, fontSize: 15, lineHeight: 23 },
-  disabled: { opacity: 0.5 },
+  cameraStatusText: { color: colors.navy, fontSize: 16, lineHeight: 24 },
+  cameraStatusMeta: { color: colors.muted, fontSize: 14, lineHeight: 21 },
+  errorBox: {
+    backgroundColor: colors.errorSoft,
+    borderColor: colors.error,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  errorText: { color: colors.errorText, fontSize: 15, lineHeight: 22 },
+  capturePulse: {
+    alignItems: "center",
+    backgroundColor: colors.tealSoft,
+    borderRadius: 10,
+    justifyContent: "center",
+    minHeight: 36,
+  },
   pressed: { opacity: 0.75 },
 });

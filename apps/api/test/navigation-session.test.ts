@@ -71,6 +71,20 @@ describe("navigation session", () => {
     );
   });
 
+  it("uses Vietnamese names throughout Vietnamese spoken guidance", () => {
+    const transition = transitionNavigationSession(
+      createMeetingRoomSession(),
+      demoGraph,
+      "MATCHED",
+      "2026-09-22T08:00:01+07:00",
+      "vi-VN",
+    );
+
+    expect(transition.spokenMessage).toBe(
+      "Đã xác nhận Quầy lễ tân. Đi thẳng đến Khu vực thang máy tầng 2.",
+    );
+  });
+
   it("stops and rescans without advancing on insufficient intermediate evidence", () => {
     const active = transitionNavigationSession(
       createMeetingRoomSession(),
@@ -132,6 +146,6 @@ describe("navigation session", () => {
     expect(completed.session.status).toBe("COMPLETED");
     expect(completed.session.expectedLandmarkId).toBeNull();
     expect(completed.routeState).toBe("ROUTE_COMPLETED");
-    expect(completed.spokenMessage).toContain("Meeting Room A");
+    expect(completed.spokenMessage).toContain("Phòng họp A");
   });
 });

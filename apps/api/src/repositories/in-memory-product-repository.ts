@@ -1,4 +1,9 @@
-import type { ProductSession, StoredObservation, WorkplaceGraph } from "../domain/types.js";
+import type {
+  ProductSession,
+  StoredObservation,
+  WorkplaceGraph,
+  WorkplaceSummary,
+} from "../domain/types.js";
 import { demoGraph } from "../fixtures/demo-graph.js";
 import type { ProductRepository } from "./product-repository.js";
 
@@ -17,6 +22,22 @@ export class InMemoryProductRepository implements ProductRepository {
     for (const graph of seedGraphs) {
       this.#graphs.set(graph.id, clone(graph));
     }
+  }
+
+  async listGraphs(): Promise<readonly WorkplaceSummary[]> {
+    return [...this.#graphs.values()]
+      .map((graph) => ({
+        id: graph.id,
+        name: graph.name,
+        status: graph.status,
+        landmarkCount: graph.landmarks.length,
+        createdAt: graph.createdAt,
+      }))
+      .sort(
+        (left, right) =>
+          right.createdAt.localeCompare(left.createdAt) || left.name.localeCompare(right.name),
+      )
+      .map(clone);
   }
 
   async getGraph(routeId: string): Promise<WorkplaceGraph | null> {

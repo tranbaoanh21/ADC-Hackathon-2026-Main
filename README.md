@@ -1,99 +1,107 @@
-# ADC Hackathon 2026 Main
+# PathMemory
 
-Repository chính của team **Hackathon Conquerors** cho RMIT Accessibility Design Competition 2026.
+PathMemory là prototype Stage 4 của team **Hackathon Conquerors** cho RMIT Accessibility Design Competition 2026. Sản phẩm giúp nhân viên mới khiếm thị ghi nhận các điểm mốc trong ngày đầu cùng đồng nghiệp/HR, sau đó dùng graph đã được con người duyệt để nghe hướng dẫn tương đối trong các hành trình quen thuộc.
 
-Focus area đã được BTC xác nhận: **Visual Impairment — Blind or Low Vision**.
+## Đọc trước khi code
 
-Repository hiện ở trạng thái **landmark-graph scope confirmed / contract-first implementation ready**. Team đã chọn Stage 4: ngày đầu nhân viên và buddy ghi nhận các landmark ổn định; admin duyệt và nối chúng bằng cạnh có hướng; từ ngày sau nhân viên dùng screen reader chọn điểm đầu–điểm đến và nhận speech theo đường đi do Express tính trên graph đã publish. Demo dùng bốn landmark có một nhánh; contract/database không hard-code tổng số landmark.
+- Mọi thành viên/agent: [`AGENTS.md`](AGENTS.md).
+- FastAPI/model: [`services/ai/README.md`](services/ai/README.md) và [`contracts/ai-service.openapi.yaml`](contracts/ai-service.openapi.yaml).
+- Product scope: [`docs/SOLUTION_SCOPE.md`](docs/SOLUTION_SCOPE.md).
+- Trạng thái bàn giao: [`docs/HANDOFF.md`](docs/HANDOFF.md).
 
-## Bắt đầu làm việc
-
-Mọi thành viên và coding agent phải đọc theo thứ tự:
-
-1. [`AGENTS.md`](AGENTS.md)
-2. [`docs/START_HERE.md`](docs/START_HERE.md)
-3. [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
-4. [`docs/COMPETITION_BRIEF.md`](docs/COMPETITION_BRIEF.md)
-5. [`docs/SOLUTION_SCOPE.md`](docs/SOLUTION_SCOPE.md)
-6. [`docs/HANDOFF.md`](docs/HANDOFF.md)
-7. [`docs/TECHNICAL_FLOW.md`](docs/TECHNICAL_FLOW.md)
-8. Contract, example payload và README trong phần code đang phụ trách
-
-Prompt mẫu cho thread mới và teammate nằm tại [`docs/THREAD_STARTER_PROMPTS.md`](docs/THREAD_STARTER_PROMPTS.md).
-
-Không bắt đầu code feature trước khi team điền tối thiểu primary user, workplace context, barrier, golden path, non-goals và success metrics trong `docs/SOLUTION_SCOPE.md`.
-
-## Kiến trúc mặc định
-
-Kiến trúc chỉ được giữ nếu competition brief thực sự cần đủ các tầng:
+## Kiến trúc
 
 ```text
-React/Vite web hoặc Expo mobile
-                ↓
-       Express application API
-          ├── PostgreSQL
+Expo mobile / React web
           ↓
-       FastAPI AI service
-          ↓
-       Google Gemini API
+Express Product API
+    ├── PostgreSQL / Prisma
+    ↓
+FastAPI perception service
+    ↓
+Gemini
 ```
 
-- Bảo Anh phụ trách Expo mobile, React web, Express, PostgreSQL, integration, deployment và accessibility implementation trong application repository.
-- Hồng Phúc phụ trách FastAPI repository/runtime, model/provider, prompt, preprocessing, structured output, evaluation, latency và limitations.
-- `contracts/ai-service.openapi.yaml` trong repository này là source of truth cho ranh giới Express ↔ FastAPI.
-- Product/Pitch owner giữ problem evidence, user insight, story, deck và Q&A.
+- Bảo Anh: mobile, web, Express, Prisma/PostgreSQL, Product API và integration.
+- Hồng Phúc: FastAPI, Gemini/provider, prompt, preprocessing và AI eval.
+- Web/mobile chỉ gọi Express. FastAPI không sở hữu graph, database, BFS hoặc navigation narration.
 
-Chi tiết ownership, Git workflow, contract-first workflow, deployment và submission rules nằm trong `AGENTS.md`.
+## Chạy application local
 
-## Cấu trúc repository
+Yêu cầu: Node.js 24+, npm 11+ và Docker nếu dùng PostgreSQL.
+
+```bash
+npm install
+docker compose up -d postgres
+```
+
+Tạo `apps/api/.env` từ `apps/api/.env.example`. Để dùng PostgreSQL local:
+
+```dotenv
+PORT=3000
+DATABASE_URL=postgresql://pathmemory:pathmemory_local_only@localhost:5432/pathmemory
+PERSISTENCE_MODE=prisma
+AI_ADAPTER=mock
+AI_SERVICE_URL=http://127.0.0.1:8000
+AI_SERVICE_TOKEN=replace-with-local-token
+AI_TIMEOUT_MS=18000
+CORS_ORIGINS=http://localhost:5173
+```
+
+Chạy migration và seed:
+
+```bash
+npm run db:migrate:deploy --workspace @pathmemory/api
+npm run db:seed --workspace @pathmemory/api
+```
+
+Mở ba terminal:
+
+```bash
+npm run dev:api
+npm run dev:web
+npm run dev:mobile
+```
+
+- Web: tạo `apps/web/.env` với `VITE_API_URL=http://localhost:3000`.
+- Mobile trên máy thật: tạo `apps/mobile/.env` với `EXPO_PUBLIC_API_URL=http://<LAN-IP-của-máy>:3000`; không dùng `localhost` từ điện thoại.
+- FastAPI mock/live: làm theo [`services/ai/README.md`](services/ai/README.md). Khi tích hợp FastAPI local, đặt `AI_ADAPTER=live` và dùng cùng internal token ở hai service.
+
+## Kiểm tra
+
+Application:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
+
+FastAPI:
+
+```bash
+cd services/ai
+python -m ruff check .
+python -m ruff format --check .
+python -m pytest
+```
+
+## Repository map
 
 ```text
-apps/
-  web/              React/Vite client nếu brief cần web
-  api/              Express application backend
-  mobile/           Expo/React Native client nếu brief cần camera/mobile
-services/
-  ai/               Integration notes; FastAPI runtime do Hồng Phúc sở hữu
-contracts/
-  examples/         OpenAPI và payload mẫu dùng chung
-evals/
-  cases/            Fixed evaluation cases và kết quả đo
-docs/               Brief, scope, decisions và evidence
-  diagrams/          PlantUML source và SVG dùng trong deck
-demo-assets/        Asset được phép dùng cho demo/fallback
-ADC-main-submission-template/
-                    Tài liệu và PowerPoint template chính thức
+apps/mobile/       Expo app cho nhân viên khiếm thị
+apps/web/          React console cho đồng nghiệp/HR
+apps/api/          Express, Prisma, graph/BFS/session/narration
+services/ai/       FastAPI perception service
+contracts/         Product API và AI-service OpenAPI + examples
+evals/             AI evaluation cases/scripts guidance
+docs/              Brief, scope, handoff và accessibility evidence
+demo-assets/       Chỉ asset có quyền sử dụng cho demo/fallback
 ```
 
-Không bắt buộc xây cả web và mobile. Sau khi đọc brief, chọn client nhỏ nhất có thể chứng minh golden path đáng tin cậy.
+## Trạng thái
 
-## Workflow ngay sau khi nhận brief
+FE/BE/DB/contracts và FastAPI mock/Gemini adapter đã có implementation local. Product API đang ở v3.1.0; AI-service vẫn ở v1.1.0. Device screen-reader QA, production deployment và một smoke end-to-end Express → FastAPI → Gemini vẫn là việc cần hoàn tất. Xem trạng thái chính xác tại [`docs/HANDOFF.md`](docs/HANDOFF.md).
 
-1. Chép nguyên văn brief và yêu cầu chính vào `docs/COMPETITION_BRIEF.md`.
-2. Tách `Official fact`, `Observed evidence`, `Assumption` và `Decision`.
-3. Điền `docs/SOLUTION_SCOPE.md` và khóa một golden path.
-4. Chốt request, response và error contract bằng example JSON.
-5. Software track phát triển với mock; AI track thử provider bằng cùng contract.
-6. Integrate sớm, sau đó ưu tiên accessibility, eval, deployment và submission evidence.
-
-## Trạng thái hiện tại
-
-- [x] Git repository và remote đã được tạo
-- [x] Team workflow và ownership đã được ghi trong `AGENTS.md`
-- [x] Official submission template và guides đã được lưu
-- [x] Repository skeleton đã sẵn sàng
-- [x] New-thread, teammate onboarding và handoff workflow đã được chuẩn hóa
-- [x] PlantUML source/rendering convention đã được định nghĩa
-- [x] Competition brief đã được nhập
-- [x] Solution scope Stage 4 đã được team chốt
-- [x] Product API v3 structured-edge contract và AI-service v1.1 contract đã được tạo
-- [x] Application workspace và API/web/mobile shells đã được scaffold theo brief
-- [ ] Golden path chạy end-to-end
-
-## Secrets
-
-- Không commit `.env`, API key, database URL hoặc token.
-- Chỉ commit `.env.example` với placeholder.
-- Gemini key chỉ nằm trong server-side AI service.
-- Database credential chỉ nằm trong application backend environment.
-- Nếu secret từng bị commit, phải revoke và rotate; xóa file ở commit mới không đủ bảo vệ secret cũ.
+Không commit `.env`, API key, database URL thật, internal token hoặc raw workplace media.

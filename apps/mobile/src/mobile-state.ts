@@ -1,4 +1,4 @@
-import { type Language, mobileCopy } from "./i18n";
+import { type Language, localizeSpokenText, mobileCopy } from "./i18n";
 import type { ObservationResponse } from "./types";
 
 export interface NavigationPresentation {
@@ -20,40 +20,41 @@ export function presentNavigationObservation(
   language: Language = "vi",
 ): NavigationPresentation {
   const copy = mobileCopy[language];
+  const message = localizeSpokenText(response.spokenMessage, language);
   switch (response.routeState) {
     case "AWAITING_START_CONFIRMATION":
       return {
         tone: "warning",
         heading: copy.routeAwaiting,
-        message: response.spokenMessage,
+        message,
         completed: false,
       };
     case "STOP_AND_RESCAN":
       return {
         tone: "warning",
         heading: copy.routeStop,
-        message: response.spokenMessage,
+        message,
         completed: false,
       };
     case "SEEKING_LANDMARK":
       return {
         tone: "info",
         heading: copy.routeContinue,
-        message: response.spokenMessage,
+        message,
         completed: false,
       };
     case "ROUTE_COMPLETED":
       return {
         tone: "success",
         heading: copy.routeComplete,
-        message: response.spokenMessage,
+        message,
         completed: true,
       };
     case "OBSERVING":
       return {
         tone: "info",
         heading: copy.routeObserved,
-        message: response.spokenMessage,
+        message,
         completed: false,
       };
   }

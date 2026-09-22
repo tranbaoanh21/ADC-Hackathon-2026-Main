@@ -1,6 +1,12 @@
-import type { ProductSession, StoredObservation, WorkplaceGraph } from "../domain/types.js";
+import type {
+  ProductSession,
+  StoredObservation,
+  WorkplaceGraph,
+  WorkplaceSummary,
+} from "../domain/types.js";
 
 export interface ProductRepository {
+  listGraphs(): Promise<readonly WorkplaceSummary[]>;
   getGraph(routeId: string): Promise<WorkplaceGraph | null>;
   saveGraph(graph: WorkplaceGraph): Promise<WorkplaceGraph>;
   getSession(sessionId: string): Promise<ProductSession | null>;

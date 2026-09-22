@@ -9,6 +9,7 @@ import {
   type RelativeManeuver,
   relativeManeuvers,
   type WorkplaceGraph,
+  type WorkplaceSummary,
 } from "./api";
 import {
   type Language,
@@ -25,7 +26,6 @@ const defaultRouteId =
 
 interface EdgeDraft {
   readonly key: string;
-  readonly displayOrder: number;
   readonly fromLandmarkId: string;
   readonly toLandmarkId: string;
   readonly maneuver: RelativeManeuver;
@@ -116,7 +116,7 @@ function LandmarkForm({
         name: String(data.get("name") ?? ""),
         description: String(data.get("description") ?? ""),
         type: String(data.get("type")) as LandmarkType,
-        displayOrder: Number(data.get("displayOrder")),
+        displayOrder: landmark.displayOrder,
         reviewStatus: String(data.get("reviewStatus")) as "AI_DRAFT" | "BUDDY_VERIFIED",
       });
       const refreshed = await productApi.getRoute(graph.id);
@@ -215,17 +215,6 @@ function LandmarkForm({
               />
             </label>
             <label>
-              {copy.displayOrder}
-              <input
-                name="displayOrder"
-                type="number"
-                min={0}
-                defaultValue={landmark.displayOrder}
-                disabled={disabled}
-              />
-              <span className="field-hint">{copy.displayOrderHint}</span>
-            </label>
-            <label>
               {copy.reviewStatus}
               <select name="reviewStatus" defaultValue={landmark.status} disabled={disabled}>
                 <option value="AI_DRAFT">{copy.draftOption}</option>
@@ -267,7 +256,6 @@ function EdgeEditor({
   copy,
   onUpdate,
   onRemove,
-  onSpeak,
 }: {
   edge: EdgeDraft;
   index: number;
@@ -277,7 +265,6 @@ function EdgeEditor({
   copy: WebCopy;
   onUpdate: (key: string, patch: Partial<EdgeDraft>) => void;
   onRemove: (key: string) => void;
-  onSpeak: (cue: string) => void;
 }) {
   const contentId = useId();
   const [expanded, setExpanded] = useState(index === 0);
@@ -357,17 +344,6 @@ function EdgeEditor({
                   ))}
                 </select>
               </label>
-              <label>
-                {copy.priorityOrder}
-                <input
-                  type="number"
-                  min={0}
-                  value={edge.displayOrder}
-                  onChange={(event) =>
-                    onUpdate(edge.key, { displayOrder: Number(event.target.value) })
-                  }
-                />
-              </label>
               <div className="edge-instruction generated-instruction">
                 <span className="generated-instruction-label">{copy.spokenInstruction}</span>
                 <p>{generatedCue}</p>
@@ -376,13 +352,6 @@ function EdgeEditor({
             </div>
           </fieldset>
           <div className="button-row edge-actions">
-            <button
-              className="button button-secondary"
-              type="button"
-              onClick={() => onSpeak(generatedCue)}
-            >
-              {copy.replayInstruction}
-            </button>
             <button
               className="button button-danger-quiet"
               type="button"
@@ -408,6 +377,8 @@ export function App() {
   );
   const [routeId, setRouteId] = useState(initialRouteId);
   const [graph, setGraph] = useState<WorkplaceGraph | null>(null);
+  const [workplaces, setWorkplaces] = useState<readonly WorkplaceSummary[]>([]);
+  const [workplacesLoading, setWorkplacesLoading] = useState(false);
   const [edgeDrafts, setEdgeDrafts] = useState<EdgeDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(copy.ready);
@@ -415,8 +386,9 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.lang = language;
+    document.title = copy.documentTitle;
     window.localStorage.setItem("pathmemory-language", language);
-  }, [language]);
+  }, [copy.documentTitle, language]);
 
   const applyGraph = useCallback((next: WorkplaceGraph, message: string) => {
     setGraph(next);
@@ -424,12 +396,21 @@ export function App() {
     setEdgeDrafts(
       next.edges.map((edge) => ({
         key: edge.id,
-        displayOrder: edge.displayOrder,
         fromLandmarkId: edge.fromLandmarkId,
         toLandmarkId: edge.toLandmarkId,
         maneuver: edge.maneuver,
       })),
     );
+    setWorkplaces((current) => {
+      const summary: WorkplaceSummary = {
+        id: next.id,
+        name: next.name,
+        status: next.status,
+        landmarkCount: next.landmarks.length,
+        createdAt: next.createdAt,
+      };
+      return [summary, ...current.filter((item) => item.id !== next.id)];
+    });
     window.history.replaceState(null, "", `?routeId=${encodeURIComponent(next.id)}`);
     setError("");
     setNotice(message);
@@ -455,9 +436,30 @@ export function App() {
     [applyGraph, copy, language],
   );
 
+  const loadWorkplaces = useCallback(async () => {
+    setWorkplacesLoading(true);
+    try {
+      const available = await productApi.listRoutes();
+      setWorkplaces(available);
+      setRouteId((current) =>
+        available.length > 0 && !available.some((item) => item.id === current)
+          ? (available[0]?.id ?? "")
+          : current,
+      );
+    } catch (caught) {
+      setError(errorMessage(caught, language, copy));
+    } finally {
+      setWorkplacesLoading(false);
+    }
+  }, [copy, language]);
+
   useEffect(() => {
     void loadGraph(initialRouteId);
   }, [initialRouteId, loadGraph]);
+
+  useEffect(() => {
+    void loadWorkplaces();
+  }, [loadWorkplaces]);
 
   async function runAction(action: () => Promise<void>, loadingMessage: string) {
     setBusy(true);
@@ -490,7 +492,6 @@ export function App() {
       ...current,
       {
         key: crypto.randomUUID(),
-        displayOrder: current.length,
         fromLandmarkId: from.id,
         toLandmarkId: to.id,
         maneuver: "GO_STRAIGHT",
@@ -498,18 +499,6 @@ export function App() {
     ]);
     setError("");
     setNotice(copy.directionAdded);
-  }
-
-  function speakCue(cue: string) {
-    if (!("speechSynthesis" in window)) {
-      setError(copy.speechUnsupported);
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(cue);
-    utterance.lang = language === "en" ? "en-US" : "vi-VN";
-    window.speechSynthesis.speak(utterance);
-    setNotice(copy.replaying);
   }
 
   const verifiedLandmarks =
@@ -542,7 +531,7 @@ export function App() {
             <PathMemoryMark />
             <span className="brand-copy">
               <strong>PathMemory</strong>
-              <small>Verified landmarks. Familiar journeys.</small>
+              <small>{copy.slogan}</small>
             </span>
           </a>
           <div className="topbar-actions">
@@ -580,7 +569,6 @@ export function App() {
       <main id="main-content" className="page-shell">
         <section className="hero" aria-labelledby="page-title">
           <div>
-            <p className="eyebrow">{copy.stage}</p>
             <h1 id="page-title">{copy.title}</h1>
             <p className="lede">{copy.lede}</p>
           </div>
@@ -600,7 +588,7 @@ export function App() {
         <section className="panel" aria-labelledby="route-loader-title">
           <div className="panel-header">
             <h2 id="route-loader-title">{copy.openRouteTitle}</h2>
-            <p id="route-id-help">{copy.openRouteHelp}</p>
+            <p id="workplace-help">{copy.openRouteHelp}</p>
           </div>
           <div className="panel-body">
             <form
@@ -611,23 +599,44 @@ export function App() {
               }}
             >
               <label>
-                {copy.routeIdLabel}
-                <input
+                {copy.workplaceLabel}
+                <select
                   value={routeId}
                   onChange={(event) => setRouteId(event.target.value)}
-                  aria-describedby="route-id-help"
+                  aria-describedby="workplace-help"
                   required
-                />
+                  disabled={workplacesLoading || workplaces.length === 0}
+                >
+                  <option value="" disabled>
+                    {workplacesLoading ? copy.opening : copy.selectWorkplace}
+                  </option>
+                  {workplaces.map((workplace) => (
+                    <option key={workplace.id} value={workplace.id}>
+                      {copy.workplaceOption(workplace.name, workplace.landmarkCount)}
+                    </option>
+                  ))}
+                </select>
               </label>
               <button
                 className="button button-primary"
                 type="submit"
-                disabled={busy}
+                disabled={busy || workplacesLoading || !routeId}
                 aria-busy={busy}
               >
                 {busy ? copy.opening : copy.openMap}
               </button>
+              <button
+                className="button button-secondary"
+                type="button"
+                disabled={workplacesLoading}
+                onClick={() => void loadWorkplaces()}
+              >
+                {copy.refreshWorkplaces}
+              </button>
             </form>
+            {!workplacesLoading && workplaces.length === 0 ? (
+              <p className="empty-inline">{copy.noWorkplaces}</p>
+            ) : null}
             <div className="live-message" aria-live="polite" aria-atomic="true">
               {notice}
             </div>
@@ -651,10 +660,6 @@ export function App() {
                   <span>{copy.workplaceMap}</span>
                   <strong>{graph.name}</strong>
                   <StatusBadge language={language} status={graph.status} />
-                </article>
-                <article className="summary-item">
-                  <span>Route ID</span>
-                  <code>{graph.id}</code>
                 </article>
                 <article className="summary-item">
                   <span>{copy.landmarks}</span>
@@ -771,13 +776,6 @@ export function App() {
                 </div>
               </div>
               <div className="panel-body">
-                <div className="callout callout-info">
-                  <span className="callout-icon" aria-hidden="true">
-                    ↗
-                  </span>
-                  <p>{copy.displayOrderReview}</p>
-                </div>
-
                 {edgeDrafts.length > 0 ? (
                   <div className="edge-list">
                     {edgeDrafts.map((edge, index) => (
@@ -793,7 +791,6 @@ export function App() {
                         onRemove={(key) =>
                           setEdgeDrafts((current) => current.filter((item) => item.key !== key))
                         }
-                        onSpeak={speakCue}
                       />
                     ))}
                   </div>
@@ -821,14 +818,12 @@ export function App() {
                       void runAction(async () => {
                         const saved = await productApi.replaceEdges(
                           graph.id,
-                          edgeDrafts.map(
-                            ({ displayOrder, fromLandmarkId, toLandmarkId, maneuver }) => ({
-                              displayOrder,
-                              fromLandmarkId,
-                              toLandmarkId,
-                              maneuver,
-                            }),
-                          ),
+                          edgeDrafts.map(({ fromLandmarkId, toLandmarkId, maneuver }, index) => ({
+                            displayOrder: index,
+                            fromLandmarkId,
+                            toLandmarkId,
+                            maneuver,
+                          })),
                         );
                         applyGraph(saved, copy.directionsSaved);
                       }, copy.savingDirections)

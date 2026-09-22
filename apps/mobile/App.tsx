@@ -27,7 +27,7 @@ import {
   startNavigateSession,
 } from "./src/api";
 import { CapturePanel } from "./src/CapturePanel";
-import { type Language, landmarkTypeLabels, mobileCopy } from "./src/i18n";
+import { type Language, localizeLandmarkName, mobileCopy } from "./src/i18n";
 import {
   Button,
   Choice,
@@ -35,14 +35,12 @@ import {
   LogoMark,
   ModeCard,
   PageHeading,
-  SafetyNotice,
   SummaryRow,
   Surface,
 } from "./src/MobileUI";
 import { presentNavigationObservation, shouldApplyObservation } from "./src/mobile-state";
 import { colors } from "./src/theme";
 import type {
-  CandidateLandmark,
   LandmarkSummary,
   ObservationResponse,
   RouteSession,
@@ -55,7 +53,6 @@ type Screen =
   | "HOME"
   | "LEARN_SETUP"
   | "LEARN_SCAN"
-  | "LEARN_REVIEW"
   | "NAV_ROUTE"
   | "NAV_ORIGIN"
   | "NAV_DESTINATION"
@@ -70,15 +67,10 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
-  const [showRouteCodeInput, setShowRouteCodeInput] = useState(false);
 
   const [workplaceName, setWorkplaceName] = useState(copy.demoWorkplace);
-  const [routeId, setRouteId] = useState(DEMO_ROUTE_ID);
   const [graph, setGraph] = useState<WorkplaceGraph | null>(null);
   const [session, setSession] = useState<RouteSession | null>(null);
-  const [candidate, setCandidate] = useState<CandidateLandmark | null>(null);
-  const [candidateName, setCandidateName] = useState("");
-  const [candidateObservationId, setCandidateObservationId] = useState("");
   const [savedLandmarks, setSavedLandmarks] = useState(0);
 
   const [origin, setOrigin] = useState<LandmarkSummary | null>(null);
@@ -89,6 +81,7 @@ export default function App() {
 
   const latestRequestId = useRef("");
   const requestCounter = useRef(0);
+  const savedCandidateKeys = useRef(new Set<string>());
   const scrollRef = useRef<ScrollView>(null);
   const screenHeadingRef = useRef<View>(null);
 
@@ -110,10 +103,17 @@ export default function App() {
     setStatus("");
   }
 
+  function changeLanguage(nextLanguage: Language) {
+    setWorkplaceName((currentName) =>
+      currentName === mobileCopy[language].demoWorkplace
+        ? mobileCopy[nextLanguage].demoWorkplace
+        : currentName,
+    );
+    setLanguage(nextLanguage);
+  }
+
   function describeError(value: unknown): string {
-    if (value instanceof ProductApiError) {
-      return language === "en" ? copy.genericApiError : value.message;
-    }
+    if (value instanceof ProductApiError) return copy.genericApiError;
     return copy.unknownError;
   }
 
@@ -121,7 +121,6 @@ export default function App() {
     void stopSpeaking();
     setScreen("HOME");
     setSession(null);
-    setCandidate(null);
     setOrigin(null);
     setDestination(null);
     setDestinations([]);
@@ -130,7 +129,7 @@ export default function App() {
     setGraph(null);
     setError("");
     setStatus("");
-    setShowRouteCodeInput(false);
+    savedCandidateKeys.current.clear();
   }
 
   async function beginLearn() {
@@ -145,10 +144,10 @@ export default function App() {
       const newGraph = await createRoute(name);
       const newSession = await startLearnSession(newGraph.id);
       setGraph(newGraph);
-      setRouteId(newGraph.id);
       setSession(newSession);
       setSavedLandmarks(0);
-      setStatus(copy.draftCreated(newGraph.name));
+      savedCandidateKeys.current.clear();
+      setStatus(copy.draftCreated(localizeLandmarkName(newGraph.name, language)));
       setScreen("LEARN_SCAN");
     } catch (value) {
       setError(describeError(value));
@@ -170,49 +169,34 @@ export default function App() {
     clearFeedback();
     setBusy(true);
     const requestId = newRequestId();
+    let candidateKey = "";
     latestRequestId.current = requestId;
     try {
       const response = await observeFrame(session.id, uri, requestId, language);
       if (!shouldApplyObservation(latestRequestId.current, response.requestId)) return;
       setLastObservation(response);
-      setStatus(response.spokenMessage);
-      await announceMessage(response.spokenMessage, language);
-      if (response.candidateLandmark) {
-        setCandidate(response.candidateLandmark);
-        setCandidateName(response.candidateLandmark.proposedName);
-        setCandidateObservationId(response.observationId);
-        setScreen("LEARN_REVIEW");
-      }
-    } catch (value) {
-      setError(describeError(value));
-    } finally {
-      setBusy(false);
-    }
-  }
+      const candidate = response.candidateLandmark;
+      if (!candidate) return;
 
-  async function saveCandidate() {
-    if (!session || !candidateObservationId || !candidateName.trim()) {
-      setError(copy.nameEvidenceRequired);
-      return;
-    }
-    clearFeedback();
-    setBusy(true);
-    try {
+      candidateKey = candidate.proposedName.trim().toLocaleLowerCase();
+      if (!candidateKey || savedCandidateKeys.current.has(candidateKey)) return;
+
       const saved = await saveLandmarkDraft(
         session.id,
-        candidateObservationId,
-        candidateName.trim(),
+        response.observationId,
+        candidate.proposedName,
       );
-      const message = copy.savedDraft(saved.name);
+      savedCandidateKeys.current.add(candidateKey);
+      const message = copy.savedDraft(localizeLandmarkName(saved.name, language));
       setSavedLandmarks((count) => count + 1);
-      setCandidate(null);
-      setCandidateName("");
-      setCandidateObservationId("");
-      setLastObservation(null);
       setStatus(message);
       await announceMessage(message, language);
-      setScreen("LEARN_SCAN");
     } catch (value) {
+      if (value instanceof ProductApiError && value.code === "DUPLICATE_LANDMARK") {
+        if (candidateKey) savedCandidateKeys.current.add(candidateKey);
+        setStatus(copy.duplicateLandmarkSkipped);
+        return;
+      }
       setError(describeError(value));
     } finally {
       setBusy(false);
@@ -234,7 +218,7 @@ export default function App() {
     }
   }
 
-  async function loadPublishedRoute(requestedRouteId = routeId) {
+  async function loadPublishedRoute(requestedRouteId: string) {
     const trimmedRouteId = requestedRouteId.trim();
     if (!trimmedRouteId) {
       setError(copy.codeRequired);
@@ -251,7 +235,9 @@ export default function App() {
       setOrigin(null);
       setDestination(null);
       setDestinations([]);
-      setStatus(copy.mapOpened(loaded.name, loaded.landmarks.length));
+      setStatus(
+        copy.mapOpened(localizeLandmarkName(loaded.name, language), loaded.landmarks.length),
+      );
       setScreen("NAV_ORIGIN");
     } catch (value) {
       setGraph(null);
@@ -272,10 +258,10 @@ export default function App() {
       const reachable = await getReachableDestinations(graph.id, item.id);
       setDestinations(reachable.destinations);
       if (reachable.destinations.length === 0) {
-        setError(copy.noReachableDestination(item.name));
+        setError(copy.noReachableDestination(localizeLandmarkName(item.name, language)));
         return;
       }
-      setStatus(copy.originSelected(item.name));
+      setStatus(copy.originSelected(localizeLandmarkName(item.name, language)));
       setScreen("NAV_DESTINATION");
     } catch (value) {
       setError(describeError(value));
@@ -302,9 +288,7 @@ export default function App() {
       setSession(newSession);
       setExpectedLandmark(origin);
       setLastObservation(null);
-      const message = copy.confirmOrigin(origin.name);
-      setStatus(message);
-      await announceMessage(message, language);
+      setStatus("");
       setScreen("NAV_SCAN");
     } catch (value) {
       setError(describeError(value));
@@ -341,7 +325,7 @@ export default function App() {
   const showGlobalStatus =
     Boolean(status) &&
     screen !== "HOME" &&
-    screen !== "LEARN_REVIEW" &&
+    screen !== "LEARN_SCAN" &&
     screen !== "NAV_SCAN" &&
     screen !== "COMPLETE";
 
@@ -357,7 +341,7 @@ export default function App() {
               <Text style={styles.tagline}>{copy.tagline}</Text>
             </View>
           </View>
-          <LanguageSwitch language={language} onChange={setLanguage} />
+          <LanguageSwitch language={language} onChange={changeLanguage} />
         </View>
       </View>
 
@@ -395,7 +379,7 @@ export default function App() {
             </View>
           ) : null}
 
-          {busy ? (
+          {busy && screen !== "LEARN_SCAN" && screen !== "NAV_SCAN" ? (
             <View accessibilityLiveRegion="polite" style={styles.busyRow}>
               <ActivityIndicator color={colors.blue} size="small" />
               <Text style={styles.busyText}>{copy.processing}</Text>
@@ -406,7 +390,6 @@ export default function App() {
             <View style={styles.screen}>
               <PageHeading
                 description={copy.homeDescription}
-                eyebrow={copy.homeEyebrow}
                 headingRef={screenHeadingRef}
                 title={copy.homeTitle}
               />
@@ -416,9 +399,7 @@ export default function App() {
                 language={language}
                 onPress={() => {
                   clearFeedback();
-                  setRouteId(DEMO_ROUTE_ID);
                   setGraph(null);
-                  setShowRouteCodeInput(false);
                   setScreen("NAV_ROUTE");
                 }}
                 primary
@@ -434,7 +415,6 @@ export default function App() {
                 }}
                 title={copy.dayOneTitle}
               />
-              <SafetyNotice compact language={language} />
             </View>
           ) : null}
 
@@ -447,8 +427,8 @@ export default function App() {
                 title={copy.learnSetupTitle}
               />
               <Surface>
-                <Text style={styles.surfaceTitle}>{copy.buddyRole}</Text>
-                <Text style={styles.body}>{copy.buddyRoleDescription}</Text>
+                <Text style={styles.surfaceTitle}>{copy.supportRole}</Text>
+                <Text style={styles.body}>{copy.supportRoleDescription}</Text>
               </Surface>
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>{copy.workplaceName}</Text>
@@ -490,71 +470,10 @@ export default function App() {
                 onCapture={captureLearnFrame}
                 purpose={copy.learnCapturePurpose}
               />
-              <Surface>
-                <Text style={styles.routeCodeLabel}>{copy.draftCodeForBuddy}</Text>
-                <Text
-                  accessibilityLabel={copy.draftCodeLabel(routeId)}
-                  selectable
-                  style={styles.routeCode}
-                >
-                  {routeId}
-                </Text>
-              </Surface>
               <Button
                 disabled={busy}
                 label={copy.finishRecording}
                 onPress={() => void endLearn()}
-                variant="secondary"
-              />
-            </View>
-          ) : null}
-
-          {screen === "LEARN_REVIEW" && candidate ? (
-            <View style={styles.screen}>
-              <PageHeading
-                description={copy.reviewProposalDescription}
-                eyebrow={copy.learnStep3}
-                headingRef={screenHeadingRef}
-                title={copy.reviewProposalTitle}
-              />
-              <Surface>
-                <View style={styles.aiDraftTag}>
-                  <Text style={styles.aiDraftTagText}>{copy.capturedSuggestion}</Text>
-                </View>
-                <SummaryRow
-                  label={copy.placeType}
-                  value={landmarkTypeLabels[language][candidate.type]}
-                />
-                <SummaryRow label={copy.capturedDescription} value={candidate.draftDescription} />
-                <SummaryRow
-                  label={copy.visibleText}
-                  value={candidate.visibleText.join(", ") || copy.noReadableText}
-                />
-              </Surface>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>{copy.placeNameToSave}</Text>
-                <TextInput
-                  accessibilityLabel={copy.placeNameToSave}
-                  editable={!busy}
-                  onChangeText={setCandidateName}
-                  selectTextOnFocus
-                  style={styles.input}
-                  value={candidateName}
-                />
-              </View>
-              <Button
-                disabled={busy}
-                label={copy.saveForBuddy}
-                onPress={() => void saveCandidate()}
-              />
-              <Button
-                disabled={busy}
-                label={copy.discardAndRescan}
-                onPress={() => {
-                  setCandidate(null);
-                  setCandidateObservationId("");
-                  setScreen("LEARN_SCAN");
-                }}
                 variant="secondary"
               />
             </View>
@@ -578,46 +497,12 @@ export default function App() {
                   onPress={() => void loadPublishedRoute(DEMO_ROUTE_ID)}
                 />
               </Surface>
-
-              {showRouteCodeInput ? (
-                <Surface>
-                  <Text style={styles.surfaceTitle}>{copy.useAnotherCode}</Text>
-                  <Text style={styles.body}>{copy.codeHelp}</Text>
-                  <TextInput
-                    accessibilityLabel={copy.workplaceCode}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    editable={!busy}
-                    onChangeText={setRouteId}
-                    placeholder={copy.codePlaceholder}
-                    placeholderTextColor={colors.disabledText}
-                    style={styles.input}
-                    value={routeId}
-                  />
-                  <Button
-                    disabled={busy}
-                    label={copy.openWithCode}
-                    onPress={() => void loadPublishedRoute()}
-                    variant="secondary"
-                  />
-                </Surface>
-              ) : (
-                <Button
-                  label={copy.useAnotherCode}
-                  onPress={() => {
-                    setRouteId("");
-                    setShowRouteCodeInput(true);
-                  }}
-                  variant="quiet"
-                />
-              )}
             </View>
           ) : null}
 
           {screen === "NAV_ORIGIN" && graph ? (
             <View style={styles.screen}>
               <PageHeading
-                description={copy.chooseOriginDescription(graph.name)}
                 eyebrow={copy.navStep2}
                 headingRef={screenHeadingRef}
                 title={copy.chooseOriginTitle}
@@ -645,7 +530,9 @@ export default function App() {
           {screen === "NAV_DESTINATION" && origin ? (
             <View style={styles.screen}>
               <PageHeading
-                description={copy.chooseDestinationDescription(origin.name)}
+                description={copy.chooseDestinationDescription(
+                  localizeLandmarkName(origin.name, language),
+                )}
                 eyebrow={copy.navStep3}
                 headingRef={screenHeadingRef}
                 title={copy.chooseDestinationTitle}
@@ -679,14 +566,19 @@ export default function App() {
                 title={copy.confirmJourneyTitle}
               />
               <Surface>
-                <SummaryRow label={copy.startingPoint} value={origin.name} />
-                <SummaryRow label={copy.destination} value={destination.name} />
+                <SummaryRow
+                  label={copy.startingPoint}
+                  value={localizeLandmarkName(origin.name, language)}
+                />
+                <SummaryRow
+                  label={copy.destination}
+                  value={localizeLandmarkName(destination.name, language)}
+                />
                 <SummaryRow label={copy.guidance} value={copy.guidanceValue} />
               </Surface>
-              <SafetyNotice language={language} />
               <Button
                 disabled={busy}
-                hint={copy.startJourneyHint(origin.name)}
+                hint={copy.startJourneyHint(localizeLandmarkName(origin.name, language))}
                 label={copy.startJourney}
                 onPress={() => void beginNavigation()}
               />
@@ -704,11 +596,14 @@ export default function App() {
                 description={copy.scanDescription}
                 eyebrow={copy.navigating}
                 headingRef={screenHeadingRef}
-                title={expectedLandmark?.name ?? copy.scanTitleFallback}
+                title={
+                  expectedLandmark
+                    ? localizeLandmarkName(expectedLandmark.name, language)
+                    : copy.scanTitleFallback
+                }
               />
               {lastObservation ? (
                 <View
-                  accessibilityLiveRegion="polite"
                   style={
                     lastObservation.routeState === "STOP_AND_RESCAN" ||
                     lastObservation.routeState === "AWAITING_START_CONFIRMATION"
@@ -719,31 +614,21 @@ export default function App() {
                   <Text style={styles.instructionEyebrow}>
                     {presentNavigationObservation(lastObservation, language).heading}
                   </Text>
-                  <Text style={styles.instructionText}>{lastObservation.spokenMessage}</Text>
-                  <Button
-                    label={copy.replayGuidance}
-                    onPress={() => void announceMessage(lastObservation.spokenMessage, language)}
-                    variant="secondary"
-                  />
+                  <Text style={styles.instructionText}>
+                    {presentNavigationObservation(lastObservation, language).message}
+                  </Text>
                 </View>
-              ) : (
-                <View style={styles.instructionCard}>
-                  <Text style={styles.instructionEyebrow}>{copy.firstConfirmation}</Text>
-                  <Text style={styles.instructionText}>{status}</Text>
-                  <Button
-                    label={copy.replayGuidance}
-                    onPress={() => void announceMessage(status, language)}
-                    variant="secondary"
-                  />
-                </View>
-              )}
+              ) : null}
               <CapturePanel
                 busy={busy}
                 language={language}
                 onCapture={captureNavigationFrame}
-                purpose={copy.navCapturePurpose(expectedLandmark?.name ?? copy.scanTitleFallback)}
+                purpose={copy.navCapturePurpose(
+                  expectedLandmark
+                    ? localizeLandmarkName(expectedLandmark.name, language)
+                    : copy.scanTitleFallback,
+                )}
               />
-              <SafetyNotice compact language={language} />
               <Button label={copy.stopJourney} onPress={goHome} variant="danger" />
             </View>
           ) : null}
@@ -762,21 +647,13 @@ export default function App() {
               />
               {graph?.status === "DRAFT" ? (
                 <Surface>
-                  <Text style={styles.surfaceTitle}>{copy.handoffCode}</Text>
-                  <Text
-                    accessibilityLabel={copy.draftCodeLabel(graph.id)}
-                    selectable
-                    style={styles.routeCode}
-                  >
-                    {graph.id}
-                  </Text>
-                  <Text style={styles.body}>{copy.handoffHelp}</Text>
+                  <Text style={styles.surfaceTitle}>{copy.readyForReview}</Text>
+                  <Text style={styles.body}>{copy.reviewOnWeb}</Text>
                 </Surface>
               ) : (
-                <Surface>
+                <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                   <Text style={styles.completionMark}>✓</Text>
-                  <Text style={styles.completionText}>{copy.completionHelp}</Text>
-                </Surface>
+                </View>
               )}
               <Button label={copy.returnHome} onPress={goHome} />
             </View>
@@ -874,26 +751,6 @@ const styles = StyleSheet.create({
   },
   countValue: { color: colors.tealDark, fontSize: 30, fontWeight: "800" },
   countLabel: { color: colors.tealText, flexShrink: 1, fontSize: 16, fontWeight: "600" },
-  routeCodeLabel: { color: colors.muted, fontSize: 14, fontWeight: "700" },
-  routeCode: {
-    backgroundColor: colors.canvas,
-    borderColor: colors.line,
-    borderRadius: 10,
-    borderWidth: 1,
-    color: colors.navy,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    fontSize: 14,
-    lineHeight: 21,
-    padding: 12,
-  },
-  aiDraftTag: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.infoSoft,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  aiDraftTagText: { color: colors.infoText, fontSize: 13, fontWeight: "800" },
   routeCardLabel: {
     color: colors.tealDark,
     fontSize: 14,
@@ -931,11 +788,5 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontSize: 48,
     fontWeight: "800",
-  },
-  completionText: {
-    color: colors.navy,
-    fontSize: 18,
-    lineHeight: 27,
-    textAlign: "center",
   },
 });

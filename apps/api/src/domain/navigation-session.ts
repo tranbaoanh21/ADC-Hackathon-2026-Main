@@ -57,7 +57,7 @@ function rescanTransition(
     landmarkMatchStatus: matchStatus,
     expectedLandmark: expected,
     spokenMessage: rescanNarration(
-      expected?.name ?? (locale === "en-US" ? "the expected landmark" : "landmark cần tìm"),
+      expected?.name ?? (locale === "en-US" ? "the expected landmark" : "điểm mốc cần tìm"),
       awaitingStart,
       locale,
     ),

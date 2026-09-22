@@ -61,6 +61,14 @@ export interface WorkplaceGraph {
   readonly publishedAt: string | null;
 }
 
+export interface WorkplaceSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly status: WorkplaceGraph["status"];
+  readonly landmarkCount: number;
+  readonly createdAt: string;
+}
+
 export interface LandmarkSummary {
   readonly id: string;
   readonly displayOrder: number;

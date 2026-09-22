@@ -1,7 +1,8 @@
 import type { ReactNode, RefObject } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 
-import { type Language, landmarkTypeLabels, mobileCopy } from "./i18n";
+import { type Language, landmarkTypeLabels, localizeLandmarkName, mobileCopy } from "./i18n";
 import { colors } from "./theme";
 import type { LandmarkSummary } from "./types";
 
@@ -120,10 +121,11 @@ export function Choice({
 }) {
   const copy = mobileCopy[language];
   const typeLabel = landmarkTypeLabels[language][item.type];
+  const displayName = localizeLandmarkName(item.name, language);
   return (
     <Pressable
       accessibilityHint={copy.choiceHint}
-      accessibilityLabel={`${item.name}. ${typeLabel}. ${selected ? copy.selected : copy.notSelected}`}
+      accessibilityLabel={`${displayName}. ${typeLabel}. ${selected ? copy.selected : copy.notSelected}`}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
@@ -141,29 +143,13 @@ export function Choice({
         </View>
       ) : null}
       <View style={styles.choiceCopy}>
-        <Text style={styles.choiceName}>{item.name}</Text>
+        <Text style={styles.choiceName}>{displayName}</Text>
         <Text style={styles.choiceMeta}>{typeLabel}</Text>
       </View>
       <Text style={[styles.choiceState, selected && styles.choiceStateSelected]}>
         {selected ? copy.selected : copy.select}
       </Text>
     </Pressable>
-  );
-}
-
-export function SafetyNotice({
-  language,
-  compact = false,
-}: {
-  readonly language: Language;
-  readonly compact?: boolean;
-}) {
-  const copy = mobileCopy[language];
-  return (
-    <View accessibilityRole="summary" style={styles.safetyNotice}>
-      {!compact ? <Text style={styles.safetyTitle}>{copy.safetyTitle}</Text> : null}
-      <Text style={styles.safetyText}>{compact ? copy.compactSafety : copy.safetyText}</Text>
-    </View>
   );
 }
 
@@ -223,11 +209,28 @@ export function LogoMark() {
       importantForAccessibility="no-hide-descendants"
       style={styles.logoMark}
     >
-      <View style={styles.logoLineVertical} />
-      <View style={styles.logoLineHorizontal} />
-      <View style={[styles.logoNode, styles.logoNodeStart]} />
-      <View style={[styles.logoNode, styles.logoNodeMiddle]} />
-      <View style={[styles.logoNode, styles.logoNodeEnd]} />
+      <Svg height="48" viewBox="0 0 96 96" width="48">
+        <Rect fill="#F7FAFC" height="96" rx="20" width="96" />
+        <Path
+          d="M18 64 C35 64 34 30 49 30 C64 30 62 64 78 64"
+          fill="none"
+          stroke="#0B1F33"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="8"
+        />
+        <Circle cx="18" cy="64" fill="#007A78" r="9" stroke="#F7FAFC" strokeWidth="4" />
+        <Circle cx="49" cy="30" fill="#005FCC" r="9" stroke="#F7FAFC" strokeWidth="4" />
+        <Circle cx="78" cy="64" fill="#005FCC" r="11" stroke="#F7FAFC" strokeWidth="4" />
+        <Path
+          d="M73 64l4 4 8-10"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="3.5"
+        />
+      </Svg>
     </View>
   );
 }
@@ -363,16 +366,6 @@ const styles = StyleSheet.create({
   choiceMeta: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   choiceState: { color: colors.blue, fontSize: 14, fontWeight: "800" },
   choiceStateSelected: { color: colors.infoText },
-  safetyNotice: {
-    backgroundColor: colors.warningSoft,
-    borderColor: "#FEDF89",
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 6,
-    padding: 16,
-  },
-  safetyTitle: { color: colors.warningText, fontSize: 16, fontWeight: "800" },
-  safetyText: { color: colors.warningText, fontSize: 15, lineHeight: 23 },
   summaryRow: {
     borderBottomColor: colors.line,
     borderBottomWidth: 1,
@@ -383,34 +376,11 @@ const styles = StyleSheet.create({
   summaryValue: { color: colors.navy, fontSize: 18, fontWeight: "700", lineHeight: 25 },
   logoMark: {
     alignItems: "center",
-    backgroundColor: colors.navy,
-    borderColor: "rgba(255,255,255,0.16)",
-    borderRadius: 14,
-    borderWidth: 1,
     height: 48,
     justifyContent: "center",
+    overflow: "hidden",
     width: 48,
   },
-  logoLineVertical: {
-    backgroundColor: colors.surface,
-    height: 29,
-    left: 14,
-    position: "absolute",
-    top: 10,
-    width: 3,
-  },
-  logoLineHorizontal: {
-    backgroundColor: colors.surface,
-    height: 3,
-    left: 16,
-    position: "absolute",
-    top: 13,
-    width: 19,
-  },
-  logoNode: { borderRadius: 6, height: 10, position: "absolute", width: 10 },
-  logoNodeStart: { backgroundColor: "#5ED2C8", left: 11, top: 7 },
-  logoNodeMiddle: { backgroundColor: "#84CAFF", left: 31, top: 9 },
-  logoNodeEnd: { backgroundColor: "#84CAFF", left: 11, top: 33 },
   surface: {
     backgroundColor: colors.surface,
     borderColor: colors.line,

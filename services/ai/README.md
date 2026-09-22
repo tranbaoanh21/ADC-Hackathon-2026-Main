@@ -1,62 +1,86 @@
-# PathMemory internal AI service
+# PathMemory FastAPI perception service
 
-FastAPI runtime do **Hồng Phúc** sở hữu và được triển khai trực tiếp trong
-`services/ai/` của monorepo này. Canonical interface vẫn là
-`contracts/ai-service.openapi.yaml` version `1.1.0`; việc chuyển runtime vào
-monorepo không thay đổi contract.
+Owner: **Hồng Phúc**
 
-Runtime hỗ trợ deterministic mock và Gemini adapter. Mock không gọi network và
-vẫn là provider mặc định. Gemini adapter đã được kiểm tra offline bằng fake
-client và có một live smoke schema-valid với `gemini-3.1-flash-lite`. Một smoke
-request không phải evidence về AI accuracy, latency distribution hay deployment.
+Canonical interface: `contracts/ai-service.openapi.yaml` v1.1.0
+
+Read `AGENTS.md` first. This service is an internal perception boundary consumed only by Express.
+
+## Start here for an agent
+
+```text
+Read AGENTS.md, this README, contracts/ai-service.openapi.yaml and
+contracts/examples/ai-*.json. Check git status and branch.
+
+Implement or refine only services/ai and evals. Preserve AI-service v1.1.
+FastAPI may interpret frames and return structured landmark evidence, but it
+must not use PostgreSQL, build graph edges, run BFS, infer left/right/straight,
+write user navigation sentences, advance sessions or make safety decisions.
+Run Ruff and pytest. Report contract impact, model/config tested, eval evidence,
+latency, limitations and changed files.
+```
 
 ## Boundary
 
-Service chỉ trả perception evidence. Nó không truy cập PostgreSQL, không đọc
-graph, không chạy BFS, không quản lý navigation session và không trả route,
-movement cue, `shouldAdvance`, `STOP_AND_RESCAN` hay safety decision. Client
-không gọi FastAPI trực tiếp; Express giữ vai trò consumer của internal API.
+FastAPI may:
 
-Raw frame chỉ được giữ trong memory hoặc temporary multipart spool trong thời
-gian request và không được application lưu hoặc log. Runtime cũng không log
-bearer token hay raw provider payload.
+- validate multipart metadata and JPEG/PNG bytes;
+- check frame quality;
+- apply EXIF orientation, RGB conversion, resize and in-memory encoding;
+- ask Gemini for structured visible text, scene context, landmark candidates, stable features and uncertainty;
+- return stable validation/provider/timeout errors.
+
+FastAPI must not:
+
+- access application PostgreSQL;
+- deduplicate, approve or publish landmarks;
+- infer graph connectivity or edge maneuvers;
+- run BFS/DFS/Dijkstra;
+- manage navigation sessions or expected-landmark transitions;
+- produce user-facing route narration;
+- assert obstacle detection or safety.
+
+The application uses controlled sequential capture. AI-service v1.1 still accepts one to three frames for one observation. Raw frames are request-local and are not stored or logged by application code.
 
 ## Endpoints
 
-- `GET /health` trả `{"status":"ok","schemaVersion":"1.0"}` và không gọi provider.
-- `POST /internal/v1/perception` nhận `multipart/form-data`, bearer token,
-  metadata contract và 1–3 JPEG/PNG frames.
+- `GET /health` returns service status without calling Gemini.
+- `POST /internal/v1/perception` requires a bearer internal token and multipart fields defined by the canonical OpenAPI.
 
-Runtime interpretation của contract hiện tại:
+Current error policy:
 
-- thiếu frame hoặc frame/content type/metadata không hợp lệ → HTTP `422`
-  `VALIDATION_ERROR`;
-- hơn ba frame, một frame quá giới hạn hoặc toàn request quá giới hạn → HTTP
-  `413` `PAYLOAD_TOO_LARGE`.
+- invalid/missing metadata or frame → `422 VALIDATION_ERROR`;
+- per-frame or request size limit exceeded → `413 PAYLOAD_TOO_LARGE`;
+- bad/missing internal token → `401`;
+- provider unavailable/error → stable provider envelope;
+- provider timeout → `504 PROVIDER_TIMEOUT`.
 
 ## Environment
 
-Sao chép giá trị cần thiết từ `.env.example` vào secret/environment manager;
-application không tự đọc file `.env`.
+| Variable | Default/requirement |
+|---|---|
+| `INTERNAL_SERVICE_TOKEN` | Required for perception; shared server-side with Express |
+| `MAX_FRAME_BYTES` | `5242880` |
+| `MAX_REQUEST_BYTES` | `16777216` |
+| `PROVIDER_TIMEOUT_SECONDS` | `15` |
+| `AI_PROVIDER` | `mock`; set `gemini` for live provider |
+| `GEMINI_API_KEY` | Required only for Gemini; never commit/log |
+| `GEMINI_MODEL` | Explicit vision-capable model ID; no production default |
 
-| Variable | Required/default | Meaning |
-|---|---:|---|
-| `INTERNAL_SERVICE_TOKEN` | Required for perception | Opaque server-side token shared only with Express. If unset, every perception request is rejected with 401. |
-| `MAX_FRAME_BYTES` | `5242880` | Maximum bytes for each frame (5 MiB). |
-| `MAX_REQUEST_BYTES` | `16777216` | Maximum multipart request size (16 MiB). |
-| `PROVIDER_TIMEOUT_SECONDS` | `15` | Provider execution timeout. |
-| `AI_PROVIDER` | `mock` | Select `mock` or `gemini`. Unknown values map perception calls to provider unavailable. |
-| `GEMINI_API_KEY` | Required when `AI_PROVIDER=gemini` | Server-side Gemini credential. Never commit, log or send it to a client. |
-| `GEMINI_MODEL` | Required when `AI_PROVIDER=gemini` | Explicit vision-capable Gemini model ID; there is no production default. |
-
-The consuming Express service must set `AI_TIMEOUT_MS` slightly above `PROVIDER_TIMEOUT_SECONDS`. Current repository defaults are 18 seconds for Express and 15 seconds for FastAPI, allowing FastAPI to return its stable `504 PROVIDER_TIMEOUT` envelope before Express aborts the upstream request.
-
-Do not put `INTERNAL_SERVICE_TOKEN` in a `VITE_` or `EXPO_PUBLIC_` variable and
-do not commit a real token.
+Express `AI_TIMEOUT_MS` must be slightly longer than the provider timeout so FastAPI can return its stable timeout envelope first. Repository examples use 18 seconds for Express and 15 seconds for FastAPI.
 
 ## Local setup
 
-From `services/ai/` on PowerShell:
+macOS/Linux from `services/ai/`:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[dev]'
+export INTERNAL_SERVICE_TOKEN='<local-secret>'
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -65,72 +89,53 @@ $env:INTERNAL_SERVICE_TOKEN = "<local-secret>"
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Mock is selected by default. To select Gemini in the same PowerShell session,
-set secrets/config outside the repository before starting Uvicorn:
+Mock is the default. To run Gemini, set `AI_PROVIDER=gemini`, `GEMINI_API_KEY`, `GEMINI_MODEL` and the internal token in the server environment. Never paste secrets into source, command history, screenshots, logs or chat.
 
-```powershell
-$env:AI_PROVIDER = "gemini"
-$env:GEMINI_API_KEY = Read-Host "GEMINI_API_KEY" -MaskInput
-$env:GEMINI_MODEL = "<vision-capable-gemini-model-id>"
-$env:INTERNAL_SERVICE_TOKEN = Read-Host "INTERNAL_SERVICE_TOKEN" -MaskInput
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+## Verification
+
+```bash
+.venv/bin/python -m ruff check .
+.venv/bin/python -m ruff format --check .
+.venv/bin/python -m pytest
 ```
 
-In a second PowerShell, set only the same internal service token and run one
-permission-safe smoke request with a local test image:
+Use the equivalent `.venv\Scripts\python.exe` commands on Windows.
 
-```powershell
-$env:INTERNAL_SERVICE_TOKEN = Read-Host "INTERNAL_SERVICE_TOKEN" -MaskInput
-curl.exe -X POST "http://127.0.0.1:8000/internal/v1/perception" `
-  -H "Authorization: Bearer $env:INTERNAL_SERVICE_TOKEN" `
-  -F "requestId=local-gemini-smoke-001" `
-  -F "locale=vi-VN" `
-  -F "analysisMode=LANDMARK_DISCOVERY" `
-  -F "frames=@C:\path\to\permission-safe-frame.png;type=image/png"
+For one permission-safe smoke request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/internal/v1/perception \
+  -H "Authorization: Bearer $INTERNAL_SERVICE_TOKEN" \
+  -F requestId=local-smoke-001 \
+  -F locale=vi-VN \
+  -F analysisMode=LANDMARK_DISCOVERY \
+  -F 'frames=@/path/to/permission-safe-frame.png;type=image/png'
 ```
 
-Do not paste the API key into the command, source files, output, screenshots or
-chat. Record only model ID, input class, schema validity and measured processing
-time. One smoke response is connectivity/schema evidence, not an accuracy eval.
+One smoke proves connectivity/schema only, not model accuracy.
 
-Run verification:
+## Implementation map
 
-```powershell
-.\.venv\Scripts\python.exe -m ruff check .
-.\.venv\Scripts\python.exe -m pytest
-```
+- `app/providers/base.py` — provider-neutral interface.
+- `app/providers/prompt.py` — versioned perception prompt.
+- `app/services/perception.py` — timeout and strict output validation.
+- Gemini adapter — official async client and structured JSON output.
+- `tests/` — request validation, provider mapping and service behavior.
+- `scripts/visual_eval.py` — fixed image/video observation runner.
+- `scripts/trigger_keyframes.py` — optional offline trigger-window frame selection experiment; not Product API behavior.
 
-The Docker image starts Uvicorn on `0.0.0.0:$PORT` (default `8000`) without
-auto-reload. A dashboard reporting `deployed` is not runtime evidence; verify
-health and an authenticated mock request separately.
+FastAPI-generated OpenAPI/docs remain disabled to avoid a second drifting contract. Update the repository OpenAPI, examples, Pydantic models and both producer/consumer tests together for any agreed change.
 
-## Provider extension point
+## Evidence and next work
 
-`app/providers/base.py` defines the provider-neutral request/interface.
-`app/services/perception.py` applies timeout and validates untrusted provider
-output against the same strict Pydantic schema used by both providers. The
-Gemini adapter uses the official `google-genai` async client with structured
-JSON output, then independently parses and validates the response.
+Prior local verification recorded 53 pytest cases with Ruff/format passing. A permission-approved pilot using one PNG and five sampled video observations returned six schema-valid results that passed their case-specific semantic expectations. FastAPI-side latency was P50 3064 ms, P95 11741 ms and max 13989 ms.
 
-Before a Gemini request, Pillow processing runs in worker threads: EXIF
-orientation is applied, frames are converted to RGB, resized to a maximum edge
-of 1024 pixels and encoded in-memory as JPEG quality 85. No frame is written to
-disk by application code. Provider/API errors are sanitized and never include
-raw Gemini output, credentials or frame bytes.
+This is a small pilot, not a general accuracy, reliability, cost, end-to-end latency or deployment claim.
 
-Prompt source is versioned at `app/providers/prompt.py` as
-`landmark-perception-v3`. It explicitly prevents the provider from making graph,
-navigation, movement or safety decisions and defines conservative behavior for
-blurry, dark, obstructed, unreadable or conflicting frames. Runtime validation
-rejects blank strings, unsupported landmark candidates and low-quality outputs
-that omit uncertainty or still propose a landmark. `GEMINI_MODEL` remains
-runtime config.
+Next priorities:
 
-Pilot evidence on 2026-09-22: one permission-approved local PNG and five sampled
-video observations were processed by `gemini-3.1-flash-lite`. All six responses
-validated against AI-service v1.1 and passed their defined semantic expectations
-after frame-level ground-truth review. FastAPI-side latency was P50 3064 ms, P95
-11741 ms and max 13989 ms. This small local set is not a general accuracy,
-end-to-end latency, reliability-distribution or deployment claim.
-FastAPI-generated OpenAPI/docs are disabled so they cannot become a second,
-drifting contract; use the canonical repository OpenAPI file instead.
+1. expand to 10–20 representative positive and negative cases;
+2. record failures and conservative uncertainty behavior;
+3. deploy FastAPI with server-side secrets;
+4. run Express → FastAPI mock and Gemini smoke;
+5. measure end-to-end latency and estimated cost.

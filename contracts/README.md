@@ -1,55 +1,66 @@
-# Contracts
+# PathMemory Contracts
 
-Source of truth cho ranh giới giữa client, Express và FastAPI.
+Canonical interfaces between clients, Express and FastAPI.
 
-Current contract versions:
+## Versions
 
-- Product API `3.0.0`: published landmark graph, reachable destinations, deterministic navigation planning and directed `RouteEdge` relations. Edge narration is derived from the reviewed maneuver instead of being authored or stored.
-- AI service `1.1.0`: perception only, with extensible workplace landmark categories; independent of total route landmark count.
+- `product-api.openapi.yaml` — Product API `3.1.0`, served by Express under `/api/v2`.
+- `ai-service.openapi.yaml` — internal perception API `1.1.0`, implemented by FastAPI.
 
-Files:
+Product API 3.1 keeps structured directed graph behavior and adds `GET /api/v2/routes` so the web console can select a workplace by recognisable name instead of entering an internal ID. Express owns graph, BFS, persistence, navigation state and generated EN/VI narration.
+
+AI-service 1.1 is perception-only. FastAPI receives one to three ephemeral frames and returns structured landmark evidence. It does not receive or compute graph paths, maneuvers, session transitions or product actions.
+
+## Ownership
+
+- Bảo Anh owns Product API behavior and the Express consumer of AI-service v1.1.
+- Hồng Phúc owns the FastAPI producer of AI-service v1.1.
+- Both approve semantic or breaking changes to the AI contract.
+
+## Examples
+
+Product examples include:
+
+- workplace list and published graph;
+- observation success and Product API errors;
+- structured edge request;
+- reachable destinations;
+- navigation session request/success;
+- confirmed and unconfirmed start observations.
+
+AI examples include:
+
+- `ai-perception-request-metadata.json`;
+- `ai-perception-success.json`;
+- `ai-validation-error.json`;
+- `ai-provider-error.json`.
+
+Examples are fixtures and documentation, not a second schema. OpenAPI plus runtime validators remain authoritative.
+
+## Change rules
+
+Every contract change updates in the same change set:
+
+1. OpenAPI;
+2. relevant example JSON;
+3. Zod/Pydantic/runtime validation;
+4. producer tests;
+5. consumer tests;
+6. `docs/HANDOFF.md` when another owner must act.
+
+An optional field addition is additive but still requires examples and tests. Removing/renaming a field, changing meaning, or making an optional field required is breaking.
+
+Mock and live providers must use the same response shape. Never expose raw provider output as Product API or AI-service contract.
+
+## FastAPI teammate checkpoint
+
+Before editing the producer, read:
 
 ```text
-contracts/
-├── product-api.openapi.yaml
-├── ai-service.openapi.yaml
-└── examples/
-    ├── product-observation-success.json
-    ├── product-validation-error.json
-    ├── product-provider-timeout.json
-    ├── product-route-published.json
-    ├── product-route-edges-request.json
-    ├── product-reachable-destinations.json
-    ├── product-navigation-session-request.json
-    ├── product-navigation-session-success.json
-    ├── product-navigation-start-confirmed.json
-    ├── product-navigation-start-not-confirmed.json
-    ├── ai-perception-request-metadata.json
-    ├── ai-perception-success.json
-    ├── ai-validation-error.json
-    └── ai-provider-error.json
+AGENTS.md
+services/ai/README.md
+contracts/ai-service.openapi.yaml
+contracts/examples/ai-*.json
 ```
 
-Mỗi field phải có meaning và owner rõ ràng. Mock và live provider phải dùng cùng response shape. Raw provider response không được trở thành product contract.
-
-Ownership:
-
-- Bảo Anh owns `product-api.openapi.yaml` behavior and consumes `ai-service.openapi.yaml` from Express.
-- Hồng Phúc implements the FastAPI producer for `ai-service.openapi.yaml`.
-- Both owners approve semantic or breaking changes to the internal contract.
-
-Versioning:
-
-- Adding an optional field is additive but still requires an updated example and validator test.
-- Removing/renaming a field, making an optional field required or changing its meaning is breaking.
-- Never let provider-specific raw output leak into either contract.
-
-Product API `3.0.0` retains the `/api/v2` route namespace used by the prototype, but removes authored `spokenCue` values from the Product API `2.0.0` graph contract. Consumers now send and receive structured maneuvers only; Express produces localised narration deterministically.
-
-The graph model remains a breaking change from the fixed linear-route v1 contract:
-
-- a route resource now represents one bounded workplace landmark graph;
-- origin and destination are selected per `NAVIGATE` session;
-- Express computes a deterministic unweighted path over published directed edges;
-- `displayOrder` is only for stable admin/screen-reader list ordering;
-- FastAPI remains on AI-service `1.1.0` and does not receive or compute navigation paths.
+Do not change Product API or move graph/navigation responsibilities into FastAPI to resolve a provider implementation issue.
