@@ -80,3 +80,11 @@ quality/cosine thresholds are engineering defaults for the controlled demo and
 must be calibrated on representative footage; they are not general visual
 quality guarantees.
 
+The checked-in trigger example currently bookmarks the visible `eispaces`
+reception at 4000 ms and the small room-4 sign at 14500 ms. The corresponding
+human-accepted, deterministic handoff data is in
+`evals/fixtures/guided-walk-accepted-landmarks.json`. That fixture lets the
+application track build review/import behavior before FE/BE integration exists;
+it is not a Product API response, database record or replacement for an exact
+live-provider rerun of the selected trigger frames.
+

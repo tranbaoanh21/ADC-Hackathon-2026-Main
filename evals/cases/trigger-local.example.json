@@ -3,14 +3,14 @@
   "sessionId": "guided-walk-demo-001",
   "triggers": [
     {
-      "triggerId": "trigger-001",
-      "timestampMs": 5000,
-      "createdBy": "ADMIN"
+      "triggerId": "reception-eispaces",
+      "timestampMs": 4000,
+      "createdBy": "USER"
     },
     {
-      "triggerId": "trigger-002",
-      "timestampMs": 18000,
-      "createdBy": "ADMIN"
+      "triggerId": "room-4",
+      "timestampMs": 14500,
+      "createdBy": "USER"
     }
   ]
 }

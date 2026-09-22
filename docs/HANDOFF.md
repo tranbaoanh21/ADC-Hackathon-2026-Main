@@ -75,6 +75,7 @@ Files for Bảo Anh:
 - Fixed local visual manifest: `evals/cases/visual-local.json`.
 - Live/local eval command: `services/ai/scripts/run_live_visual_eval.ps1`.
 - Trigger keyframe command: `services/ai/scripts/trigger_keyframes.py` with example manifest `evals/cases/trigger-local.example.json`.
+- Accepted local integration fixture: `evals/fixtures/guided-walk-accepted-landmarks.json`; it contains the reviewed `eispaces` reception and room-4 candidates plus timestamp-derived draft adjacency. It is not a Product API response or database state, and the edge still requires an admin maneuver and spoken cue.
 
 Integration action for Bảo Anh:
 1. Keep mobile/web calling Express only; do not call FastAPI directly.

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0",
+  "fixtureType": "AI_REVIEW_HANDOFF_FIXTURE",
+  "sessionId": "guided-walk-demo-001",
+  "reviewState": "ACCEPTED_FOR_LOCAL_INTEGRATION_ONLY",
+  "triggerManifestPath": "evals/cases/trigger-local.example.json",
+  "landmarks": [
+    {
+      "localLandmarkId": "local-landmark-reception-eispaces",
+      "sequenceIndex": 1,
+      "triggerId": "reception-eispaces",
+      "timestampMs": 4000,
+      "candidate": {
+        "proposedName": "Quầy lễ tân eispaces",
+        "type": "RECEPTION",
+        "visibleText": [
+          "eispaces"
+        ],
+        "stableFeatures": [
+          "Bảng chữ eispaces gắn trên tường tối màu phía sau quầy lễ tân"
+        ],
+        "draftDescription": "Khu vực quầy lễ tân có bảng chữ eispaces gắn trên tường phía sau quầy.",
+        "transientFeatures": [
+          "Người tại quầy lễ tân",
+          "Cốc cầm tay",
+          "Ghế và bàn trong khu vực chờ"
+        ]
+      },
+      "reviewDecision": "ACCEPTED",
+      "evidenceProvenance": {
+        "humanVisualReview": true,
+        "priorLiveEvalRequestId": "local-guided-office-video-001",
+        "exactTriggerFramesReplayedWithLiveProvider": false
+      }
+    },
+    {
+      "localLandmarkId": "local-landmark-room-4",
+      "sequenceIndex": 2,
+      "triggerId": "room-4",
+      "timestampMs": 14500,
+      "candidate": {
+        "proposedName": "Phòng số 4",
+        "type": "ROOM_ENTRANCE",
+        "visibleText": [
+          "4"
+        ],
+        "stableFeatures": [
+          "Biển số 4 gắn cố định cạnh phần trên của khung cửa",
+          "Cửa gỗ có ô kính dọc"
+        ],
+        "draftDescription": "Cửa phòng có biển số 4 gắn cố định cạnh phần trên của khung cửa.",
+        "transientFeatures": [
+          "Cốc cầm tay"
+        ]
+      },
+      "reviewDecision": "ACCEPTED_WITH_CAPTURE_NOTE",
+      "reviewNote": "Biển số nhỏ và hơi mờ; cần quay gần hơn trong demo chính thức.",
+      "evidenceProvenance": {
+        "humanVisualReview": true,
+        "priorLiveEvalRequestId": "local-guided-office-video-004",
+        "exactTriggerFramesReplayedWithLiveProvider": false
+      }
+    }
+  ],
+  "draftAdjacency": [
+    {
+      "fromLocalLandmarkId": "local-landmark-reception-eispaces",
+      "toLocalLandmarkId": "local-landmark-room-4",
+      "status": "NEEDS_ADMIN_MANEUVER_AND_SPOKEN_CUE"
+    }
+  ],
+  "limitations": [
+    "This is a deterministic integration fixture, not a PostgreSQL record or Product API response.",
+    "The exact trigger-selected frames require a live-provider rerun before they become new AI-quality evidence.",
+    "The timestamp-derived adjacency is not publishable until an admin confirms its maneuver and spoken cue.",
+    "No route-safety, obstacle-avoidance or successful-navigation claim is made."
+  ]
+}
