@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   findNodeHandle,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -20,6 +21,7 @@ import {
   finishSession,
   getReachableDestinations,
   getRoute,
+  listRoutes,
   observeFrame,
   ProductApiError,
   saveLandmarkDraft,
@@ -27,7 +29,7 @@ import {
   startNavigateSession,
 } from "./src/api";
 import { CapturePanel } from "./src/CapturePanel";
-import { type Language, localizeLandmarkName, mobileCopy } from "./src/i18n";
+import { type Language, localizeLandmarkName, localizeSpokenText, mobileCopy } from "./src/i18n";
 import {
   Button,
   Choice,
@@ -38,16 +40,20 @@ import {
   SummaryRow,
   Surface,
 } from "./src/MobileUI";
-import { presentNavigationObservation, shouldApplyObservation } from "./src/mobile-state";
+import {
+  presentNavigationObservation,
+  publishedWorkplaces,
+  shouldApplyObservation,
+} from "./src/mobile-state";
 import { colors } from "./src/theme";
 import type {
+  CandidateLandmark,
   LandmarkSummary,
   ObservationResponse,
   RouteSession,
   WorkplaceGraph,
+  WorkplaceSummary,
 } from "./src/types";
-
-const DEMO_ROUTE_ID = "7fbd42a3-356f-4ad7-b3f5-68b79a1154b7";
 
 type Screen =
   | "HOME"
@@ -60,6 +66,12 @@ type Screen =
   | "NAV_SCAN"
   | "COMPLETE";
 
+interface PendingLandmarkConfirmation {
+  readonly candidate: CandidateLandmark;
+  readonly candidateKey: string;
+  readonly observationId: string;
+}
+
 export default function App() {
   const [language, setLanguage] = useState<Language>("en");
   const copy = mobileCopy[language];
@@ -68,8 +80,9 @@ export default function App() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
 
-  const [workplaceName, setWorkplaceName] = useState(copy.demoWorkplace);
+  const [workplaceName, setWorkplaceName] = useState("");
   const [graph, setGraph] = useState<WorkplaceGraph | null>(null);
+  const [availableWorkplaces, setAvailableWorkplaces] = useState<readonly WorkplaceSummary[]>([]);
   const [session, setSession] = useState<RouteSession | null>(null);
   const [savedLandmarks, setSavedLandmarks] = useState(0);
 
@@ -78,12 +91,14 @@ export default function App() {
   const [destination, setDestination] = useState<LandmarkSummary | null>(null);
   const [expectedLandmark, setExpectedLandmark] = useState<LandmarkSummary | null>(null);
   const [lastObservation, setLastObservation] = useState<ObservationResponse | null>(null);
+  const [pendingLandmark, setPendingLandmark] = useState<PendingLandmarkConfirmation | null>(null);
 
   const latestRequestId = useRef("");
   const requestCounter = useRef(0);
   const savedCandidateKeys = useRef(new Set<string>());
   const scrollRef = useRef<ScrollView>(null);
   const screenHeadingRef = useRef<View>(null);
+  const candidateModalHeadingRef = useRef<View>(null);
 
   useEffect(() => () => void stopSpeaking(), []);
 
@@ -104,16 +119,16 @@ export default function App() {
   }
 
   function changeLanguage(nextLanguage: Language) {
-    setWorkplaceName((currentName) =>
-      currentName === mobileCopy[language].demoWorkplace
-        ? mobileCopy[nextLanguage].demoWorkplace
-        : currentName,
-    );
     setLanguage(nextLanguage);
   }
 
   function describeError(value: unknown): string {
-    if (value instanceof ProductApiError) return copy.genericApiError;
+    if (value instanceof ProductApiError) {
+      if (value.code === "AI_PROVIDER_UNAVAILABLE") return copy.providerUnavailable;
+      if (value.code === "AI_TIMEOUT" || value.code === "TIMEOUT") return copy.requestTimedOut;
+      if (value.code === "NETWORK_ERROR") return copy.networkUnavailable;
+      return copy.genericApiError;
+    }
     return copy.unknownError;
   }
 
@@ -126,10 +141,40 @@ export default function App() {
     setDestinations([]);
     setExpectedLandmark(null);
     setLastObservation(null);
+    setPendingLandmark(null);
     setGraph(null);
+    setAvailableWorkplaces([]);
     setError("");
     setStatus("");
     savedCandidateKeys.current.clear();
+  }
+
+  async function openNavigationWorkplaces() {
+    void stopSpeaking();
+    clearFeedback();
+    setGraph(null);
+    setOrigin(null);
+    setDestination(null);
+    setDestinations([]);
+    setAvailableWorkplaces([]);
+    setScreen("NAV_ROUTE");
+    setBusy(true);
+    try {
+      const workplaces = publishedWorkplaces(await listRoutes());
+      setAvailableWorkplaces(workplaces);
+      if (workplaces.length === 0) {
+        await announceMessage(
+          `${copy.noPublishedWorkplaces} ${copy.noPublishedWorkplacesHelp}`,
+          language,
+        );
+      }
+    } catch (value) {
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function beginLearn() {
@@ -141,7 +186,7 @@ export default function App() {
     clearFeedback();
     setBusy(true);
     try {
-      const newGraph = await createRoute(name);
+      const newGraph = await createRoute(name, language);
       const newSession = await startLearnSession(newGraph.id);
       setGraph(newGraph);
       setSession(newSession);
@@ -150,7 +195,9 @@ export default function App() {
       setStatus(copy.draftCreated(localizeLandmarkName(newGraph.name, language)));
       setScreen("LEARN_SCAN");
     } catch (value) {
-      setError(describeError(value));
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
     } finally {
       setBusy(false);
     }
@@ -169,38 +216,87 @@ export default function App() {
     clearFeedback();
     setBusy(true);
     const requestId = newRequestId();
-    let candidateKey = "";
     latestRequestId.current = requestId;
     try {
       const response = await observeFrame(session.id, uri, requestId, language);
       if (!shouldApplyObservation(latestRequestId.current, response.requestId)) return;
       setLastObservation(response);
       const candidate = response.candidateLandmark;
-      if (!candidate) return;
+      if (!candidate) {
+        const message = localizeSpokenText(
+          response.spokenMessage || copy.noLandmarkCandidate,
+          language,
+        );
+        setStatus(message);
+        await announceMessage(message, language);
+        return;
+      }
 
-      candidateKey = candidate.proposedName.trim().toLocaleLowerCase();
-      if (!candidateKey || savedCandidateKeys.current.has(candidateKey)) return;
+      const candidateKey = candidate.proposedName.trim().toLocaleLowerCase();
+      if (!candidateKey) {
+        setStatus(copy.noLandmarkCandidate);
+        await announceMessage(copy.noLandmarkCandidate, language);
+        return;
+      }
+      if (savedCandidateKeys.current.has(candidateKey)) {
+        setStatus(copy.duplicateLandmarkSkipped);
+        await announceMessage(copy.duplicateLandmarkSkipped, language);
+        return;
+      }
 
+      const displayName = localizeLandmarkName(candidate.proposedName, language);
+      const message = copy.candidateFound(displayName);
+      setPendingLandmark({ candidate, candidateKey, observationId: response.observationId });
+      setStatus(message);
+      if (!(await AccessibilityInfo.isScreenReaderEnabled())) {
+        await announceMessage(message, language);
+      }
+    } catch (value) {
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmLandmarkDraft() {
+    if (session?.mode !== "LEARN" || !pendingLandmark) return;
+    clearFeedback();
+    setBusy(true);
+    try {
       const saved = await saveLandmarkDraft(
         session.id,
-        response.observationId,
-        candidate.proposedName,
+        pendingLandmark.observationId,
+        pendingLandmark.candidate.proposedName,
       );
-      savedCandidateKeys.current.add(candidateKey);
-      const message = copy.savedDraft(localizeLandmarkName(saved.name, language));
+      savedCandidateKeys.current.add(pendingLandmark.candidateKey);
+      setPendingLandmark(null);
       setSavedLandmarks((count) => count + 1);
+      const message = copy.savedDraft(localizeLandmarkName(saved.name, language));
       setStatus(message);
       await announceMessage(message, language);
     } catch (value) {
       if (value instanceof ProductApiError && value.code === "DUPLICATE_LANDMARK") {
-        if (candidateKey) savedCandidateKeys.current.add(candidateKey);
+        savedCandidateKeys.current.add(pendingLandmark.candidateKey);
+        setPendingLandmark(null);
         setStatus(copy.duplicateLandmarkSkipped);
+        await announceMessage(copy.duplicateLandmarkSkipped, language);
         return;
       }
-      setError(describeError(value));
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function discardPendingLandmark() {
+    if (busy) return;
+    setPendingLandmark(null);
+    setStatus(copy.candidateDiscarded);
+    await announceMessage(copy.candidateDiscarded, language);
   }
 
   async function endLearn() {
@@ -212,7 +308,9 @@ export default function App() {
       setStatus(copy.learnFinished(savedLandmarks));
       setScreen("COMPLETE");
     } catch (value) {
-      setError(describeError(value));
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
     } finally {
       setBusy(false);
     }
@@ -221,7 +319,7 @@ export default function App() {
   async function loadPublishedRoute(requestedRouteId: string) {
     const trimmedRouteId = requestedRouteId.trim();
     if (!trimmedRouteId) {
-      setError(copy.codeRequired);
+      setError(copy.workplaceSelectionRequired);
       return;
     }
     clearFeedback();
@@ -241,7 +339,9 @@ export default function App() {
       setScreen("NAV_ORIGIN");
     } catch (value) {
       setGraph(null);
-      setError(describeError(value));
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
     } finally {
       setBusy(false);
     }
@@ -264,7 +364,9 @@ export default function App() {
       setStatus(copy.originSelected(localizeLandmarkName(item.name, language)));
       setScreen("NAV_DESTINATION");
     } catch (value) {
-      setError(describeError(value));
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
     } finally {
       setBusy(false);
     }
@@ -316,7 +418,9 @@ export default function App() {
       await announceMessage(presentation.message, language);
       if (presentation.completed) setScreen("COMPLETE");
     } catch (value) {
-      setError(describeError(value));
+      const message = describeError(value);
+      setError(message);
+      await announceMessage(message, language);
     } finally {
       setBusy(false);
     }
@@ -397,11 +501,7 @@ export default function App() {
                 description={copy.everydayDescription}
                 label={copy.everydayLabel}
                 language={language}
-                onPress={() => {
-                  clearFeedback();
-                  setGraph(null);
-                  setScreen("NAV_ROUTE");
-                }}
+                onPress={() => void openNavigationWorkplaces()}
                 primary
                 title={copy.everydayTitle}
               />
@@ -464,14 +564,20 @@ export default function App() {
                 <Text style={styles.countValue}>{savedLandmarks}</Text>
                 <Text style={styles.countLabel}>{copy.savedForReview}</Text>
               </View>
+              {status ? (
+                <View accessibilityLiveRegion="polite" style={styles.statusBox}>
+                  <Text style={styles.statusTitle}>{copy.update}</Text>
+                  <Text style={styles.statusText}>{status}</Text>
+                </View>
+              ) : null}
               <CapturePanel
-                busy={busy}
+                busy={busy || Boolean(pendingLandmark)}
                 language={language}
                 onCapture={captureLearnFrame}
                 purpose={copy.learnCapturePurpose}
               />
               <Button
-                disabled={busy}
+                disabled={busy || Boolean(pendingLandmark)}
                 label={copy.finishRecording}
                 onPress={() => void endLearn()}
                 variant="secondary"
@@ -487,16 +593,38 @@ export default function App() {
                 headingRef={screenHeadingRef}
                 title={copy.openWorkplaceTitle}
               />
-              <Surface>
-                <Text style={styles.routeCardLabel}>{copy.savedWorkplace}</Text>
-                <Text style={styles.routeCardTitle}>{copy.demoWorkplace}</Text>
-                <Text style={styles.body}>{copy.demoWorkplaceDescription}</Text>
-                <Button
-                  disabled={busy}
-                  label={copy.openDemo}
-                  onPress={() => void loadPublishedRoute(DEMO_ROUTE_ID)}
-                />
-              </Surface>
+              {availableWorkplaces.length > 0 ? (
+                <View style={styles.choiceList}>
+                  {availableWorkplaces.map((workplace) => (
+                    <Surface key={workplace.id}>
+                      <Text style={styles.routeCardLabel}>{copy.savedWorkplace}</Text>
+                      <Text style={styles.routeCardTitle}>
+                        {localizeLandmarkName(workplace.name, language)}
+                      </Text>
+                      <Text style={styles.body}>
+                        {copy.publishedWorkplaceCount(workplace.landmarkCount)}
+                      </Text>
+                      <Button
+                        disabled={busy}
+                        hint={copy.choiceHint}
+                        label={copy.openWorkplace(localizeLandmarkName(workplace.name, language))}
+                        onPress={() => void loadPublishedRoute(workplace.id)}
+                      />
+                    </Surface>
+                  ))}
+                </View>
+              ) : !busy ? (
+                <Surface>
+                  <Text style={styles.routeCardTitle}>{copy.noPublishedWorkplaces}</Text>
+                  <Text style={styles.body}>{copy.noPublishedWorkplacesHelp}</Text>
+                </Surface>
+              ) : null}
+              <Button
+                disabled={busy}
+                label={copy.refreshWorkplaces}
+                onPress={() => void openNavigationWorkplaces()}
+                variant="secondary"
+              />
             </View>
           ) : null}
 
@@ -521,7 +649,7 @@ export default function App() {
               </View>
               <Button
                 label={copy.backToWorkplace}
-                onPress={() => setScreen("NAV_ROUTE")}
+                onPress={() => void openNavigationWorkplaces()}
                 variant="quiet"
               />
             </View>
@@ -659,6 +787,47 @@ export default function App() {
             </View>
           ) : null}
         </ScrollView>
+        <Modal
+          animationType="fade"
+          onRequestClose={() => void discardPendingLandmark()}
+          onShow={() => {
+            setTimeout(() => {
+              const headingHandle = findNodeHandle(candidateModalHeadingRef.current);
+              if (headingHandle) AccessibilityInfo.setAccessibilityFocus(headingHandle);
+            }, 180);
+          }}
+          transparent
+          visible={Boolean(pendingLandmark)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View accessibilityViewIsModal style={styles.modalCard}>
+              <View accessible accessibilityRole="header" focusable ref={candidateModalHeadingRef}>
+                <Text style={styles.modalEyebrow}>{copy.candidateModalEyebrow}</Text>
+                <Text style={styles.modalTitle}>
+                  {pendingLandmark
+                    ? localizeLandmarkName(pendingLandmark.candidate.proposedName, language)
+                    : ""}
+                </Text>
+              </View>
+              <Text style={styles.modalBody}>
+                {pendingLandmark?.candidate.draftDescription ?? ""}
+              </Text>
+              <Text style={styles.modalQuestion}>{copy.candidateModalQuestion}</Text>
+              <Button
+                disabled={busy}
+                hint={copy.confirmCandidateHint}
+                label={copy.confirmCandidate}
+                onPress={() => void confirmLandmarkDraft()}
+              />
+              <Button
+                disabled={busy}
+                label={copy.retakeCandidate}
+                onPress={() => void discardPendingLandmark()}
+                variant="secondary"
+              />
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -709,6 +878,30 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   surfaceTitle: { color: colors.navy, fontSize: 19, fontWeight: "800", lineHeight: 25 },
+  modalBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(4, 20, 36, 0.72)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    gap: 16,
+    maxWidth: 520,
+    padding: 24,
+    width: "100%",
+  },
+  modalEyebrow: {
+    color: colors.tealDark,
+    fontSize: 14,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  modalTitle: { color: colors.navy, fontSize: 28, fontWeight: "800", lineHeight: 35 },
+  modalBody: { color: colors.muted, fontSize: 17, lineHeight: 26 },
+  modalQuestion: { color: colors.navy, fontSize: 18, fontWeight: "700", lineHeight: 26 },
   statusBox: {
     backgroundColor: colors.successSoft,
     borderColor: "#ABEFC6",

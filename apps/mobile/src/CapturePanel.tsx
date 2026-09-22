@@ -1,14 +1,10 @@
 import { type CameraType, CameraView, useCameraPermissions } from "expo-camera";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { announceMessage } from "./accessible-speech";
 import { type Language, mobileCopy } from "./i18n";
 import { colors } from "./theme";
-
-const FIRST_CAPTURE_DELAY_MS = 900;
-const NEXT_CAPTURE_DELAY_MS = 2200;
-const BUSY_RETRY_DELAY_MS = 500;
 
 interface CapturePanelProps {
   readonly busy: boolean;
@@ -26,47 +22,14 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
   const [cameraError, setCameraError] = useState("");
   const [facing] = useState<CameraType>("back");
 
-  const mounted = useRef(true);
-  const ready = useRef(false);
-  const running = useRef(false);
-  const busyRef = useRef(busy);
-  const captureHandler = useRef(onCapture);
-  const copyRef = useRef(copy);
-  const languageRef = useRef(language);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    busyRef.current = busy;
-    captureHandler.current = onCapture;
-    copyRef.current = copy;
-    languageRef.current = language;
-  }, [busy, copy, language, onCapture]);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      ready.current = false;
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, []);
-
-  function scheduleCapture(delay: number) {
-    if (!mounted.current || !ready.current) return;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void captureFrame(), delay);
-  }
+  const captureDisabled = !cameraReady || busy || capturing;
 
   async function captureFrame() {
-    if (!mounted.current || !ready.current || running.current) return;
-    if (busyRef.current) {
-      scheduleCapture(BUSY_RETRY_DELAY_MS);
-      return;
-    }
+    if (captureDisabled) return;
 
-    running.current = true;
     setCapturing(true);
     setCameraError("");
+    await announceMessage(copy.captureProcessing, language);
     try {
       const picture = await camera.current?.takePictureAsync({
         quality: 0.65,
@@ -74,28 +37,21 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
         base64: false,
         skipProcessing: false,
       });
-      if (picture?.uri) await captureHandler.current(picture.uri);
+      if (!picture?.uri) throw new Error("Camera returned no temporary photo.");
+      await onCapture(picture.uri);
     } catch {
-      if (mounted.current) {
-        const message = copyRef.current.cameraCaptureError;
-        setCameraError(message);
-        await announceMessage(message, languageRef.current);
-      }
+      const message = copy.cameraCaptureError;
+      setCameraError(message);
+      await announceMessage(message, language);
     } finally {
-      running.current = false;
-      if (mounted.current) {
-        setCapturing(false);
-        scheduleCapture(NEXT_CAPTURE_DELAY_MS);
-      }
+      setCapturing(false);
     }
   }
 
   function handleCameraReady() {
-    if (ready.current) return;
-    ready.current = true;
+    if (cameraReady) return;
     setCameraReady(true);
     void announceMessage(copy.cameraReadyAnnouncement, language);
-    scheduleCapture(FIRST_CAPTURE_DELAY_MS);
   }
 
   if (!permission) {
@@ -115,8 +71,11 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
         </Text>
         <Text style={styles.help}>{copy.cameraPermissionHelp}</Text>
         <Pressable
+          accessible
           accessibilityRole="button"
           accessibilityLabel={copy.cameraPermissionTitle}
+          focusable
+          importantForAccessibility="yes"
           onPress={() => void requestPermission()}
           style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
         >
@@ -130,16 +89,18 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
     <View style={styles.cameraPanel}>
       <View
         accessible
-        accessibilityLabel={`${cameraReady ? copy.cameraReady : copy.cameraStarting}. ${purpose}`}
+        accessibilityLabel={`${cameraReady ? copy.cameraReady : copy.cameraStarting}. ${purpose}. ${copy.cameraPositionHelp}`}
         style={styles.cameraStatus}
       >
         <View style={styles.statusHeading}>
-          <ActivityIndicator
-            accessibilityElementsHidden
-            color={colors.blue}
-            importantForAccessibility="no"
-            size="small"
-          />
+          {!cameraReady ? (
+            <ActivityIndicator
+              accessibilityElementsHidden
+              color={colors.blue}
+              importantForAccessibility="no"
+              size="small"
+            />
+          ) : null}
           <Text style={styles.cameraStatusTitle}>
             {cameraReady ? copy.cameraReady : copy.cameraStarting}
           </Text>
@@ -163,15 +124,27 @@ export function CapturePanel({ busy, language, purpose, onCapture }: CapturePane
         style={styles.camera}
       />
 
-      {capturing ? (
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-          style={styles.capturePulse}
-        >
-          <ActivityIndicator color={colors.tealDark} size="small" />
-        </View>
-      ) : null}
+      <Pressable
+        accessible
+        accessibilityHint={copy.captureLandmarkHint}
+        accessibilityLabel={copy.captureLandmark}
+        accessibilityRole="button"
+        accessibilityState={{ busy: busy || capturing, disabled: captureDisabled }}
+        disabled={captureDisabled}
+        focusable
+        importantForAccessibility="yes"
+        onPress={() => void captureFrame()}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          captureDisabled && styles.disabled,
+          pressed && !captureDisabled && styles.pressed,
+        ]}
+      >
+        {busy || capturing ? <ActivityIndicator color={colors.surface} size="small" /> : null}
+        <Text style={styles.primaryButtonText}>
+          {busy || capturing ? copy.captureProcessing : copy.captureLandmark}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -191,8 +164,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.blue,
     borderRadius: 12,
+    flexDirection: "row",
+    gap: 10,
     justifyContent: "center",
-    minHeight: 56,
+    minHeight: 58,
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
@@ -225,12 +200,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   errorText: { color: colors.errorText, fontSize: 15, lineHeight: 22 },
-  capturePulse: {
-    alignItems: "center",
-    backgroundColor: colors.tealSoft,
-    borderRadius: 10,
-    justifyContent: "center",
-    minHeight: 36,
-  },
+  disabled: { opacity: 0.55 },
   pressed: { opacity: 0.75 },
 });

@@ -40,7 +40,7 @@ FastAPI must not:
 - produce user-facing route narration;
 - assert obstacle detection or safety.
 
-The application uses controlled sequential capture. AI-service v1.1 still accepts one to three frames for one observation. Raw frames are request-local and are not stored or logged by application code.
+The application uses explicit, screen-reader-triggered capture with at most one request in flight. AI-service v1.1 still accepts one to three frames for one observation. Raw frames are request-local and are not stored or logged by application code.
 
 ## Endpoints
 
@@ -62,12 +62,20 @@ Current error policy:
 | `INTERNAL_SERVICE_TOKEN` | Required for perception; shared server-side with Express |
 | `MAX_FRAME_BYTES` | `5242880` |
 | `MAX_REQUEST_BYTES` | `16777216` |
-| `PROVIDER_TIMEOUT_SECONDS` | `15` |
+| `PROVIDER_TIMEOUT_SECONDS` | `30` |
 | `AI_PROVIDER` | `mock`; set `gemini` for live provider |
 | `GEMINI_API_KEY` | Required only for Gemini; never commit/log |
 | `GEMINI_MODEL` | Explicit vision-capable model ID; no production default |
+| `DEMO_ALLOW_MOVABLE_LANDMARKS` | `true` for the current stage-demo build; selects one prominent prop such as a chair or bag |
 
-Express `AI_TIMEOUT_MS` must be slightly longer than the provider timeout so FastAPI can return its stable timeout envelope first. Repository examples use 18 seconds for Express and 15 seconds for FastAPI.
+Express `AI_TIMEOUT_MS` must be longer than the provider timeout so FastAPI can return its stable timeout envelope first. Repository examples use 35 seconds for Express and 30 seconds for FastAPI; mobile waits 40 seconds so it can receive that structured response instead of aborting first.
+
+`DEMO_ALLOW_MOVABLE_LANDMARKS=true` selects the short
+`landmark-perception-v5-demo-prop` prompt. It permits one visually dominant prop
+as a temporary candidate while preserving JSON validation, human confirmation
+and all route/safety boundaries. This repository currently defaults to `true`
+for the stage demonstration. Set it to `false` when evaluating production
+workplace landmark rules.
 
 ## Local setup
 
@@ -76,9 +84,16 @@ macOS/Linux from `services/ai/`:
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
-export INTERNAL_SERVICE_TOKEN='<local-secret>'
+cp .env.example .env
+set -a
+source .env
+set +a
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
+
+FastAPI does not load `services/ai/.env` automatically. Source it as shown
+above every time the service starts, and restart the process after changing
+model or timeout values.
 
 PowerShell:
 

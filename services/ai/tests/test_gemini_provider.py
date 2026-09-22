@@ -18,7 +18,13 @@ from app.providers.base import (
     ValidatedFrame,
 )
 from app.providers.gemini import MAX_IMAGE_EDGE, GeminiPerceptionProvider
-from app.providers.prompt import PROMPT_VERSION, SYSTEM_INSTRUCTION, build_user_prompt
+from app.providers.prompt import (
+    DEMO_OBJECT_SYSTEM_INSTRUCTION,
+    DEMO_PROMPT_VERSION,
+    PROMPT_VERSION,
+    SYSTEM_INSTRUCTION,
+    build_user_prompt,
+)
 from app.schemas.perception import AnalysisMode, PerceptionResponse
 from tests.conftest import frame_file, make_png, make_settings, perception_data
 
@@ -95,6 +101,8 @@ def test_gemini_success_uses_structured_config_and_validates_response() -> None:
     call = client.calls[0]
     assert call["model"] == "test-gemini-model"
     assert call["config"].response_mime_type == "application/json"
+    assert call["config"].thinking_config.thinking_level.value == "MINIMAL"
+    assert call["config"].max_output_tokens == 2048
     assert call["config"].response_json_schema["additionalProperties"] is False
     parts = call["contents"][0].parts
     assert parts[0].text is not None
@@ -114,6 +122,24 @@ def test_preprocessing_limits_image_edge_and_stays_in_memory() -> None:
     with Image.open(io.BytesIO(image_bytes)) as prepared:
         assert prepared.format == "JPEG"
         assert max(prepared.size) == MAX_IMAGE_EDGE
+
+
+def test_demo_object_mode_allows_one_movable_candidate() -> None:
+    client = FakeGeminiClient(text=json.dumps(VALID_EVIDENCE))
+    provider = GeminiPerceptionProvider(
+        client=client,
+        model_id="test-model",
+        allow_demo_objects=True,
+    )
+
+    raw_response = asyncio.run(provider.analyze(provider_request()))
+
+    assert raw_response["model"]["promptVersion"] == DEMO_PROMPT_VERSION
+    call = client.calls[0]
+    assert call["config"].system_instruction == DEMO_OBJECT_SYSTEM_INSTRUCTION
+    prompt = call["contents"][0].parts[0].text
+    assert "Portable props such as chairs" in prompt
+    assert "single most visually dominant object" in prompt
 
 
 @pytest.mark.parametrize(
@@ -310,6 +336,7 @@ def test_discovery_prompt_renders_runtime_values_without_markdown_escapes() -> N
         analysis_mode=AnalysisMode.LANDMARK_DISCOVERY,
         frame_count=3,
     )
+    normalized_prompt = " ".join(prompt.lower().split())
 
     assert "Analyze 3 frame(s) as one guided workplace-learning observation." in prompt
     assert "Requested output locale: vi-VN" in prompt
@@ -317,9 +344,12 @@ def test_discovery_prompt_renders_runtime_values_without_markdown_escapes() -> N
     assert "{frame_count}" not in prompt
     assert "{locale}" not in prompt
     assert "\\_" not in prompt
-    assert "generic corridor" in prompt.lower()
+    assert "generic corridor" in SYSTEM_INSTRUCTION.lower()
     assert "movable furnishings" in SYSTEM_INSTRUCTION.lower()
     assert "framequality must be blurry" in SYSTEM_INSTRUCTION.lower()
+    assert "draft for later human confirmation" in SYSTEM_INSTRUCTION.lower()
+    assert "combination of visibly" in normalized_prompt
+    assert "prefer proposing a grounded draft candidate" in normalized_prompt
 
 
 def test_gemini_provider_does_not_accept_model_generated_metadata() -> None:

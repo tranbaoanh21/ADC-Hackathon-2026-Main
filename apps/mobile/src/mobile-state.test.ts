@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { presentNavigationObservation, shouldApplyObservation } from "./mobile-state";
-import type { ObservationResponse } from "./types";
+import { mobileCopy } from "./i18n";
+import {
+  presentNavigationObservation,
+  publishedWorkplaces,
+  shouldApplyObservation,
+} from "./mobile-state";
+import type { ObservationResponse, WorkplaceSummary } from "./types";
 
 function observation(
   routeState: ObservationResponse["routeState"],
@@ -22,6 +27,34 @@ function observation(
 }
 
 describe("mobile observation guards", () => {
+  it("shows only published workplaces for everyday journeys", () => {
+    const workplaces: WorkplaceSummary[] = [
+      {
+        id: "draft",
+        name: "Draft office",
+        status: "DRAFT",
+        landmarkCount: 3,
+        createdAt: "2026-09-23T00:00:00.000Z",
+      },
+      {
+        id: "published",
+        name: "Published office",
+        status: "PUBLISHED",
+        landmarkCount: 2,
+        createdAt: "2026-09-22T00:00:00.000Z",
+      },
+      {
+        id: "outdated",
+        name: "Old office",
+        status: "OUTDATED",
+        landmarkCount: 4,
+        createdAt: "2026-09-21T00:00:00.000Z",
+      },
+    ];
+
+    expect(publishedWorkplaces(workplaces).map((item) => item.id)).toEqual(["published"]);
+  });
+
   it("accepts only the latest observation response", () => {
     expect(shouldApplyObservation("request-current", "request-current")).toBe(true);
     expect(shouldApplyObservation("request-current", "request-old")).toBe(false);
@@ -29,7 +62,7 @@ describe("mobile observation guards", () => {
 
   it("keeps wrong landmark observations in a stop-and-rescan state", () => {
     const result = presentNavigationObservation(observation("STOP_AND_RESCAN"));
-    expect(result.heading).toBe("Dừng lại và quét lại");
+    expect(result.heading).toBe("Dừng lại và chụp lại");
     expect(result.completed).toBe(false);
   });
 
@@ -56,5 +89,15 @@ describe("mobile observation guards", () => {
     expect(result.message).toBe(
       "Đã xác nhận Quầy lễ tân. Đi thẳng đến Khu vực thang máy tầng 2, điểm mốc tiếp theo.",
     );
+  });
+
+  it("describes explicit capture instead of continuous automatic scanning", () => {
+    expect(mobileCopy.en.captureLandmark).toBe("Capture landmark");
+    expect(mobileCopy.vi.captureLandmark).toBe("Chụp điểm mốc");
+    expect(mobileCopy.en.candidateFound("Blue chair")).toContain("Blue chair");
+    expect(mobileCopy.vi.candidateFound("Chiếc ghế màu xanh")).toContain("Chiếc ghế màu xanh");
+    expect(mobileCopy.vi.confirmCandidate).toBe("Lưu điểm mốc");
+    expect(mobileCopy.en.learnCapturePurpose).not.toContain("Automatic scanning");
+    expect(mobileCopy.vi.learnCapturePurpose).not.toContain("quét tự động");
   });
 });

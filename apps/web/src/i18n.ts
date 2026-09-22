@@ -28,6 +28,8 @@ const en = {
   workplaceOption: (name: string, count: number) =>
     `${name} — ${count} landmark${count === 1 ? "" : "s"}`,
   refreshWorkplaces: "Refresh list",
+  loadingWorkplaces: "Loading workplaces…",
+  workplaceListUpdated: "Workplace list updated.",
   opening: "Opening…",
   openMap: "Open map",
   couldNotComplete: "Could not complete the request.",
@@ -170,6 +172,8 @@ const vi: WebCopy = {
   noWorkplaces: "Chưa có bản đồ nơi làm việc nào.",
   workplaceOption: (name: string, count: number) => `${name} — ${count} mốc định hướng`,
   refreshWorkplaces: "Làm mới danh sách",
+  loadingWorkplaces: "Đang tải danh sách nơi làm việc…",
+  workplaceListUpdated: "Đã cập nhật danh sách nơi làm việc.",
   opening: "Đang mở…",
   openMap: "Mở bản đồ",
   couldNotComplete: "Không thể hoàn tất yêu cầu.",

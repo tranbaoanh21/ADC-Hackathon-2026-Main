@@ -20,7 +20,13 @@ from app.providers.base import (
     ProviderUnavailableError,
     ValidatedFrame,
 )
-from app.providers.prompt import PROMPT_VERSION, SYSTEM_INSTRUCTION, build_user_prompt
+from app.providers.prompt import (
+    DEMO_OBJECT_SYSTEM_INSTRUCTION,
+    DEMO_PROMPT_VERSION,
+    PROMPT_VERSION,
+    SYSTEM_INSTRUCTION,
+    build_user_prompt,
+)
 from app.schemas.perception import PerceptionEvidence
 
 MAX_IMAGE_EDGE = 1024
@@ -48,10 +54,12 @@ class GeminiPerceptionProvider:
         *,
         client: GeminiModelsClient,
         model_id: str,
+        allow_demo_objects: bool = False,
         close_callback: Callable[[], Awaitable[None]] | None = None,
     ) -> None:
         self._client = client
         self._model_id = model_id
+        self._allow_demo_objects = allow_demo_objects
         self._close_callback = close_callback
 
     async def analyze(self, request: PerceptionInput) -> Mapping[str, Any]:
@@ -69,6 +77,7 @@ class GeminiPerceptionProvider:
                     locale=request.locale,
                     analysis_mode=request.analysis_mode,
                     frame_count=len(prepared_frames),
+                    allow_demo_objects=self._allow_demo_objects,
                 )
             ),
             *(
@@ -77,8 +86,16 @@ class GeminiPerceptionProvider:
             ),
         ]
         config = types.GenerateContentConfig(
-            system_instruction=SYSTEM_INSTRUCTION,
-            temperature=0,
+            system_instruction=(
+                DEMO_OBJECT_SYSTEM_INSTRUCTION
+                if self._allow_demo_objects
+                else SYSTEM_INSTRUCTION
+            ),
+            # Landmark extraction is a narrow schema task. Minimal thinking keeps
+            # latency predictable and avoids spending the request budget on
+            # reasoning that the deterministic application layer does not use.
+            thinking_config=types.ThinkingConfig(thinking_level="minimal"),
+            max_output_tokens=2048,
             response_mime_type="application/json",
             response_json_schema=PerceptionEvidence.model_json_schema(by_alias=True),
         )
@@ -112,7 +129,11 @@ class GeminiPerceptionProvider:
                 "model": {
                     "provider": "gemini",
                     "modelId": self._model_id,
-                    "promptVersion": PROMPT_VERSION,
+                    "promptVersion": (
+                        DEMO_PROMPT_VERSION
+                        if self._allow_demo_objects
+                        else PROMPT_VERSION
+                    ),
                 },
                 "processingTimeMs": max(0, round((perf_counter() - started) * 1000)),
             }
@@ -124,10 +145,13 @@ class GeminiPerceptionProvider:
             await self._close_callback()
 
 
-def create_gemini_provider(*, api_key: str, model_id: str) -> GeminiPerceptionProvider:
+def create_gemini_provider(
+    *, api_key: str, model_id: str, allow_demo_objects: bool = False
+) -> GeminiPerceptionProvider:
     async_client = genai.Client(api_key=api_key).aio
     return GeminiPerceptionProvider(
         client=async_client.models,
         model_id=model_id,
+        allow_demo_objects=allow_demo_objects,
         close_callback=async_client.aclose,
     )

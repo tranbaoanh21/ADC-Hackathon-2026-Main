@@ -7,11 +7,15 @@ import type {
   ReachableDestinations,
   RouteSession,
   WorkplaceGraph,
+  WorkplaceSummary,
 } from "./types";
 
 const configuredBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 export const API_BASE_URL = (configuredBaseUrl || "http://localhost:3000").replace(/\/$/, "");
-const REQUEST_TIMEOUT_MS = 15_000;
+// Keep the client deadline longer than Express (35s) and FastAPI/Gemini (30s)
+// so the user receives the backend's structured error instead of a misleading
+// mobile network failure while a valid perception request is still running.
+const REQUEST_TIMEOUT_MS = 40_000;
 
 export class ProductApiError extends Error {
   readonly code: string;
@@ -65,15 +69,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
-export function createRoute(name: string): Promise<WorkplaceGraph> {
+export function createRoute(name: string, language: "en" | "vi"): Promise<WorkplaceGraph> {
   return request("/api/v2/routes", {
     method: "POST",
-    body: JSON.stringify({ name, locale: "vi-VN" }),
+    body: JSON.stringify({ name, locale: language === "en" ? "en-US" : "vi-VN" }),
   });
 }
 
 export function getRoute(routeId: string): Promise<WorkplaceGraph> {
   return request(`/api/v2/routes/${encodeURIComponent(routeId)}`);
+}
+
+export function listRoutes(): Promise<readonly WorkplaceSummary[]> {
+  return request("/api/v2/routes");
 }
 
 export function getReachableDestinations(

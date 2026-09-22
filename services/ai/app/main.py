@@ -37,6 +37,7 @@ def _provider_from_settings(settings: Settings) -> PerceptionProvider:
         return create_gemini_provider(
             api_key=settings.gemini_api_key,
             model_id=settings.gemini_model,
+            allow_demo_objects=settings.demo_allow_movable_landmarks,
         )
     return UnavailableProvider()
 

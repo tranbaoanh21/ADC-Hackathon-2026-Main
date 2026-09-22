@@ -119,7 +119,9 @@ export type FrameQuality = "USABLE" | "BLURRY" | "TOO_DARK" | "OBSTRUCTED" | "UN
 export interface PerceptionEvidence {
   readonly frameQuality: FrameQuality;
   readonly detectedText: readonly string[];
+  readonly candidateName?: string;
   readonly candidateVisibleText?: readonly string[];
+  readonly candidateStableFeatures?: readonly string[];
 }
 
 export interface CandidateLandmark {

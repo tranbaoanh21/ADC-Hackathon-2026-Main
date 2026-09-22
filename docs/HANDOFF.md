@@ -1,20 +1,22 @@
 # PathMemory Team Handoff
 
-Last updated: `2026-09-22`
+Last updated: `2026-09-23`
 
-Current branch: `feat/web-admin-polish`
+Current branch: `feat/manual-landmark-capture`
 
 ## Current product state
 
 - Product API `3.1.0` on prototype namespace `/api/v2`.
 - AI-service `1.1.0`; perception boundary is unchanged.
-- Expo mobile implements accessible EN/VI Explore and Navigate flows.
-- Explore uses controlled sequential camera capture with request backpressure and automatic `AI_DRAFT` submission; there is no per-frame capture/save workflow.
-- React web lists workplaces by recognisable name, reviews landmarks, creates directed structured maneuvers and publishes the graph.
+- Expo mobile implements accessible EN/VI Explore and Navigate flows. Everyday Journey loads workplaces from the Product API and exposes only `PUBLISHED` maps by recognisable name; no fixed demo UUID remains.
+- Explore and Navigate use an explicit screen-reader-labelled **Capture landmark** action. One double tap produces one temporary photo request. Explore announces the strongest candidate, moves focus into an accessible confirmation modal and saves `AI_DRAFT` only after confirmation.
+- Temporary stage demo mode defaults to `DEMO_ALLOW_MOVABLE_LANDMARKS=true`; prompt `landmark-perception-v5-demo-prop` selects one prominent prop such as a chair, bag, bottle or table. Disable the flag for production landmark rules.
+- React web boots from the shared database, handles an empty database without a failing demo request, lists workplaces by recognisable name, reviews landmarks, creates directed structured maneuvers and publishes the graph.
 - Express owns validation, persistence, deduplication, reachability, BFS, navigation state and deterministic EN/VI narration.
 - Prisma/PostgreSQL schema, migrations, seed and repository adapters are implemented.
 - FastAPI mock and Gemini provider adapters are implemented in `services/ai/`.
 - Clients call Express only; Express is the sole consumer of FastAPI.
+- Local PostgreSQL business data was intentionally cleared after integration verification; migrations remain applied and no demo seed is present, so the next E2E run starts by creating a workplace from mobile.
 
 ## Ownership boundary
 
@@ -78,10 +80,10 @@ Environment ownership:
 - Application lint passed.
 - Typecheck passed across workspaces.
 - Web and API production builds passed.
-- Mobile state/accessibility tests: 13 passed.
-- API tests: 47 passed; 3 database-dependent tests were skipped in the current run environment.
+- Mobile state/accessibility tests: 15 passed.
+- API tests: 51 passed, including 3 PostgreSQL integration tests.
 - Expo iOS Metro export passed.
-- FastAPI's prior recorded gate: Ruff/format and 53 pytest cases passed.
+- FastAPI Ruff/format passed and 54 pytest cases passed.
 - Earlier permission-approved pilot: one PNG plus five sampled video observations returned schema-valid responses and passed their defined semantic expectations. This is a small pilot, not a general accuracy claim.
 
 ## Still pending

@@ -32,6 +32,18 @@ def _positive_float(name: str, default: float) -> float:
     return value
 
 
+def _boolean(name: str, default: bool) -> bool:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    normalized = raw_value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise RuntimeError(f"{name} must be a boolean")
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     """Environment-backed configuration for mock and Gemini providers."""
@@ -39,10 +51,11 @@ class Settings:
     internal_service_token: str = ""
     max_frame_bytes: int = 5 * 1024 * 1024
     max_request_bytes: int = 16 * 1024 * 1024
-    provider_timeout_seconds: float = 15.0
+    provider_timeout_seconds: float = 30.0
     ai_provider: str = "mock"
     gemini_api_key: str = ""
     gemini_model: str = ""
+    demo_allow_movable_landmarks: bool = True
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -50,8 +63,9 @@ class Settings:
             internal_service_token=os.getenv("INTERNAL_SERVICE_TOKEN", ""),
             max_frame_bytes=_positive_int("MAX_FRAME_BYTES", 5 * 1024 * 1024),
             max_request_bytes=_positive_int("MAX_REQUEST_BYTES", 16 * 1024 * 1024),
-            provider_timeout_seconds=_positive_float("PROVIDER_TIMEOUT_SECONDS", 15.0),
+            provider_timeout_seconds=_positive_float("PROVIDER_TIMEOUT_SECONDS", 30.0),
             ai_provider=os.getenv("AI_PROVIDER", "mock").strip().lower() or "mock",
             gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
             gemini_model=os.getenv("GEMINI_MODEL", "").strip(),
+            demo_allow_movable_landmarks=_boolean("DEMO_ALLOW_MOVABLE_LANDMARKS", True),
         )

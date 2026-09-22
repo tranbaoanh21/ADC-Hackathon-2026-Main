@@ -20,10 +20,6 @@ import {
   webCopy,
 } from "./i18n";
 
-const defaultRouteId =
-  (import.meta.env.VITE_DEMO_ROUTE_ID as string | undefined) ??
-  "7fbd42a3-356f-4ad7-b3f5-68b79a1154b7";
-
 interface EdgeDraft {
   readonly key: string;
   readonly fromLandmarkId: string;
@@ -373,7 +369,7 @@ export function App() {
   );
   const copy = webCopy[language];
   const [initialRouteId] = useState(
-    () => new URLSearchParams(window.location.search).get("routeId") ?? defaultRouteId,
+    () => new URLSearchParams(window.location.search).get("routeId") ?? "",
   );
   const [routeId, setRouteId] = useState(initialRouteId);
   const [graph, setGraph] = useState<WorkplaceGraph | null>(null);
@@ -438,28 +434,79 @@ export function App() {
 
   const loadWorkplaces = useCallback(async () => {
     setWorkplacesLoading(true);
+    setError("");
     try {
       const available = await productApi.listRoutes();
       setWorkplaces(available);
-      setRouteId((current) =>
-        available.length > 0 && !available.some((item) => item.id === current)
-          ? (available[0]?.id ?? "")
-          : current,
-      );
+      const selectedId = available.some((item) => item.id === routeId)
+        ? routeId
+        : (available[0]?.id ?? "");
+      if (selectedId !== routeId) {
+        setRouteId(selectedId);
+        setGraph(null);
+        setEdgeDrafts([]);
+      }
+      if (!selectedId) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+      setNotice(available.length > 0 ? copy.workplaceListUpdated : copy.noWorkplaces);
     } catch (caught) {
       setError(errorMessage(caught, language, copy));
+      setNotice("");
     } finally {
       setWorkplacesLoading(false);
     }
-  }, [copy, language]);
+  }, [copy, language, routeId]);
 
+  // Bootstrap once from the shared database. Language changes must not switch the admin
+  // back to a different workplace while edits are in progress.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: initial database selection runs once per page load.
   useEffect(() => {
-    void loadGraph(initialRouteId);
-  }, [initialRouteId, loadGraph]);
+    let active = true;
 
-  useEffect(() => {
-    void loadWorkplaces();
-  }, [loadWorkplaces]);
+    async function initialiseFromDatabase() {
+      setBusy(true);
+      setWorkplacesLoading(true);
+      setError("");
+      setNotice(copy.loadingWorkplaces);
+      try {
+        const available = await productApi.listRoutes();
+        if (!active) return;
+        setWorkplaces(available);
+
+        const selected =
+          available.find((item) => item.id === initialRouteId) ?? available[0] ?? null;
+        if (!selected) {
+          setRouteId("");
+          setGraph(null);
+          setEdgeDrafts([]);
+          window.history.replaceState(null, "", window.location.pathname);
+          setNotice(copy.noWorkplaces);
+          return;
+        }
+
+        const loaded = await productApi.getRoute(selected.id);
+        if (!active) return;
+        applyGraph(loaded, copy.loadedMap(loaded.name));
+      } catch (caught) {
+        if (!active) return;
+        setGraph(null);
+        setEdgeDrafts([]);
+        setError(errorMessage(caught, language, copy));
+        setNotice("");
+      } finally {
+        if (active) {
+          setBusy(false);
+          setWorkplacesLoading(false);
+        }
+      }
+    }
+
+    void initialiseFromDatabase();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function runAction(action: () => Promise<void>, loadingMessage: string) {
     setBusy(true);

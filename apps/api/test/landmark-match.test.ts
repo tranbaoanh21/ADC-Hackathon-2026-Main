@@ -28,6 +28,27 @@ describe("landmark text matching", () => {
     ).toBe("NOT_MATCHED");
   });
 
+  it("matches a demo object without printed text from its reviewed name", () => {
+    const chair = {
+      ...reception,
+      name: "Blue chair",
+      visibleText: [],
+      stableFeatures: ["blue plastic chair"],
+    };
+
+    expect(
+      matchExpectedLandmark(
+        {
+          frameQuality: "USABLE",
+          detectedText: [],
+          candidateName: "Chair",
+          candidateStableFeatures: ["blue plastic chair beside a white wall"],
+        },
+        chair,
+      ),
+    ).toBe("MATCHED");
+  });
+
   it("never matches an unreadable frame", () => {
     expect(
       matchExpectedLandmark({ frameQuality: "BLURRY", detectedText: ["RECEPTION"] }, reception),

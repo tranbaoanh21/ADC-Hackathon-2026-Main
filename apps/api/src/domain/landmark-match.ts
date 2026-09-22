@@ -18,10 +18,19 @@ export function matchExpectedLandmark(
     return "INSUFFICIENT_EVIDENCE";
   }
 
-  const expectedTexts = expectedLandmark.visibleText
+  const expectedTexts = [
+    expectedLandmark.name,
+    ...expectedLandmark.visibleText,
+    ...expectedLandmark.stableFeatures,
+  ]
     .map(normalizeLandmarkText)
     .filter((value) => value.length > 0);
-  const observedTexts = [...evidence.detectedText, ...(evidence.candidateVisibleText ?? [])]
+  const observedTexts = [
+    ...evidence.detectedText,
+    evidence.candidateName ?? "",
+    ...(evidence.candidateVisibleText ?? []),
+    ...(evidence.candidateStableFeatures ?? []),
+  ]
     .map(normalizeLandmarkText)
     .filter((value) => value.length > 0);
 

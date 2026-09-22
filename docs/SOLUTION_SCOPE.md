@@ -29,25 +29,34 @@ This is a product hypothesis, not proof that physical orientation is the highest
 
 ### Day 1 — build and review a workplace graph
 
-1. Employee starts Explore mode with a screen reader, then wears the phone chest-mounted.
-2. Mobile automatically captures sequential observations with request backpressure; no per-frame capture/save control is required.
+1. Employee starts Explore mode with a screen reader and stops at a useful, stable location.
+2. VoiceOver/TalkBack reads **Capture landmark**; one double tap takes one temporary photo and disables the control until processing finishes.
 3. Express sends one to three ephemeral frames to FastAPI.
 4. FastAPI/Gemini returns structured landmark perception only.
-5. Express validates, deduplicates and stores useful candidates as `AI_DRAFT` nodes.
-6. Employee explicitly chooses **Finish exploring** when the supported walkthrough is complete.
-7. Colleague/HR selects the workplace by recognisable name on web, verifies landmark names and stable descriptions, and creates directed edges using from/to/maneuver.
-8. Express validates and publishes the graph. Narration is generated deterministically; no authored spoken cue is stored.
+5. Express validates and returns the strongest candidate to mobile.
+6. Mobile announces the candidate and opens an accessible confirmation dialog.
+7. Only a confirmed candidate is deduplicated and stored as an `AI_DRAFT` node.
+8. Employee explicitly chooses **Finish exploring** when the supported walkthrough is complete.
+9. Colleague/HR selects the workplace by recognisable name on web, verifies landmark names and stable descriptions, and creates directed edges using from/to/maneuver.
+10. Express validates and publishes the graph. Narration is generated deterministically; no authored spoken cue is stored.
+
+For the controlled stage demo only, the server-side flag
+`DEMO_ALLOW_MOVABLE_LANDMARKS=true` permits one visually dominant object such
+as a chair as a temporary candidate. Production workplace evaluation keeps the
+flag disabled and requires reusable landmark conventions.
 
 ### Day 2+ — replay a familiar journey
 
-1. Employee opens a published workplace with a screen reader.
+1. Mobile loads the shared workplace list from Express, exposes only published maps, and the employee chooses one by recognisable name with a screen reader.
 2. Employee selects an origin; Express returns only reachable destinations.
 3. Employee selects a destination; Express computes deterministic unweighted BFS.
-4. Camera observation must confirm the selected origin before the first instruction.
-5. Each later observation is matched only against the next expected landmark.
+4. Employee stops and explicitly captures an observation to confirm the selected origin before the first instruction.
+5. Each later explicit capture is matched only against the next expected landmark.
 6. A valid match advances one edge and returns the next EN/VI narration.
 7. Insufficient, conflicting or stale evidence returns `STOP_AND_RESCAN` without advancing.
 8. Matching the destination completes the journey.
+
+The admin and mobile clients never depend on a fixed demo route ID. Web can review every workplace state; mobile refreshes the same Product API list and exposes only maps whose status is `PUBLISHED`.
 
 ## Graph semantics
 
@@ -130,7 +139,7 @@ The seven principles remain product review questions, not automatic compliance c
 | Simple and Intuitive | One narrow Explore flow and one Navigate flow |
 | Perceptible Information | Spoken, textual and state feedback communicate the same outcome |
 | Tolerance for Error | Human review, start confirmation and stop-and-rescan prevent unsafe advancement |
-| Low Physical Effort | Chest-mounted automatic capture avoids repeated per-frame tapping |
+| Low Physical Effort | One large, screen-reader-labelled capture action replaces continuous handling and repeated background requests |
 | Size and Space for Approach and Use | Large touch targets and scalable layouts support low vision and one-handed setup |
 
 ## Contracts and ownership

@@ -285,7 +285,9 @@ export function createProductRouter(dependencies: ProductRouterDependencies): Ro
           {
             frameQuality: perception.frameQuality,
             detectedText: perception.detectedText,
+            candidateName: perception.landmarkCandidates[0]?.proposedName,
             candidateVisibleText: perception.landmarkCandidates[0]?.visibleText,
+            candidateStableFeatures: perception.landmarkCandidates[0]?.stableFeatures,
           },
           expected,
         );
@@ -348,13 +350,17 @@ export function createProductRouter(dependencies: ProductRouterDependencies): Ro
     assertDraftGraph(graph);
     const visibleText = unique(candidates.flatMap((candidate) => candidate.visibleText));
     const stableFeatures = unique(candidates.flatMap((candidate) => candidate.stableFeatures));
-    const normalizedCandidateText = new Set(visibleText.map(normalizeLandmarkText));
+    const normalizedCandidateEvidence = new Set(
+      [input.preferredName ?? first.proposedName, ...visibleText, ...stableFeatures]
+        .map(normalizeLandmarkText)
+        .filter(Boolean),
+    );
     const duplicate = graph.landmarks.some(
       (landmark) =>
         landmark.type === first.type &&
-        landmark.visibleText.some((text) =>
-          normalizedCandidateText.has(normalizeLandmarkText(text)),
-        ),
+        [landmark.name, ...landmark.visibleText, ...landmark.stableFeatures]
+          .map(normalizeLandmarkText)
+          .some((text) => normalizedCandidateEvidence.has(text)),
     );
     if (duplicate) {
       throw new HttpError(

@@ -44,16 +44,17 @@ PERSISTENCE_MODE=postgres
 AI_ADAPTER=mock
 AI_SERVICE_URL=http://127.0.0.1:8000
 AI_SERVICE_TOKEN=replace-with-local-token
-AI_TIMEOUT_MS=18000
+AI_TIMEOUT_MS=35000
 CORS_ORIGINS=http://localhost:5173
 ```
 
-Chạy migration và seed:
+Chạy migration:
 
 ```bash
 npm run db:migrate:deploy --workspace @pathmemory/api
-npm run db:seed --workspace @pathmemory/api
 ```
+
+Không cần seed cho luồng E2E thật: mobile sẽ tạo workplace đầu tiên. Chỉ chạy `npm run db:seed --workspace @pathmemory/api` khi cần graph mẫu độc lập để kiểm thử nhanh.
 
 Mở ba terminal:
 

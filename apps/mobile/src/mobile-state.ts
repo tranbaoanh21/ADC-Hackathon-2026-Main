@@ -1,5 +1,5 @@
 import { type Language, localizeSpokenText, mobileCopy } from "./i18n";
-import type { ObservationResponse } from "./types";
+import type { ObservationResponse, WorkplaceSummary } from "./types";
 
 export interface NavigationPresentation {
   readonly tone: "info" | "warning" | "success";
@@ -13,6 +13,12 @@ export function shouldApplyObservation(
   responseRequestId: string,
 ): boolean {
   return latestRequestId === responseRequestId;
+}
+
+export function publishedWorkplaces(
+  workplaces: readonly WorkplaceSummary[],
+): readonly WorkplaceSummary[] {
+  return workplaces.filter((workplace) => workplace.status === "PUBLISHED");
 }
 
 export function presentNavigationObservation(

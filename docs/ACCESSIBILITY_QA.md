@@ -51,9 +51,13 @@ Actual result: `PENDING — no physical VoiceOver/NVDA walkthrough recorded`.
 ## Manual mobile checklist
 
 - [ ] Home, Explore and Navigate are reachable with VoiceOver/TalkBack using clear Vietnamese-only or English-only labels.
+- [ ] Both home mode cards are announced as buttons with their action, title and context.
 - [ ] Screen transitions move focus once to the new heading and do not create a focus loop.
 - [ ] Camera permission, startup, processing, success, timeout and error states are announced without per-frame chatter.
-- [ ] Starting Explore enables controlled automatic capture; no per-frame capture/save action is required.
+- [ ] **Capture landmark / Chụp điểm mốc** is reachable by swipe, announced as a button and triggered by one screen-reader double tap.
+- [ ] The capture control is disabled while processing and becomes available again after success, insufficient evidence, duplicate or retryable error.
+- [ ] A recognized candidate moves focus into a modal that announces the object and exposes **Save landmark** and **Take another photo** as buttons.
+- [ ] No landmark draft is persisted until the user confirms the modal.
 - [ ] **Finish exploring / Kết thúc khám phá** remains reachable and does not trigger merely because the user stops walking.
 - [ ] App speech never overlaps active VoiceOver/TalkBack speech.
 - [ ] Select origin and reachable destination without sighted assistance.

@@ -23,10 +23,14 @@ export function Button({
 }) {
   return (
     <Pressable
+      accessible
       accessibilityHint={hint}
+      accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
+      focusable
+      importantForAccessibility="yes"
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
@@ -84,9 +88,13 @@ export function ModeCard({
 }) {
   return (
     <Pressable
+      accessible
       accessibilityHint={description}
-      accessibilityLabel={`${label}. ${title}`}
+      accessibilityLabel={`${title}. ${mobileCopy[language].openFeature}. ${label}`}
       accessibilityRole="button"
+      accessibilityState={{ disabled: false }}
+      focusable
+      importantForAccessibility="yes"
       onPress={onPress}
       style={({ pressed }) => [
         styles.modeCard,

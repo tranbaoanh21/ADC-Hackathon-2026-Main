@@ -52,18 +52,22 @@ test/eval đã chạy, latency, limitations và file đã sửa.
 
 ```text
 Nhân viên đi cùng đồng nghiệp/HR
-→ mobile tự chụp tuần tự các khung hình có kiểm soát
-→ mobile chỉ gửi request mới khi request trước đã hoàn tất
+→ người dùng dừng tại một vị trí và dùng screen reader kích hoạt Chụp điểm mốc
+→ mobile chụp một ảnh tạm thời và khóa nút trong lúc request đang xử lý
 → Express gửi 1–3 khung hình tạm thời sang FastAPI
 → FastAPI/Gemini trả structured landmark perception
-→ Express validate, deduplicate và lưu AI_DRAFT vào PostgreSQL
+→ Express validate và trả candidate về mobile
+→ mobile đọc candidate và mở hộp thoại xác nhận accessible
+→ người dùng xác nhận thì Express mới deduplicate và lưu AI_DRAFT vào PostgreSQL
 → đồng nghiệp/HR mở workplace trên web
 → duyệt tên và bằng chứng ổn định của điểm mốc
 → tạo từng cạnh có hướng bằng from + to + maneuver
 → publish graph
 ```
 
-Mobile không yêu cầu người dùng khiếm thị tìm và bấm nút cho từng khung hình. Có một hành động rõ ràng **Kết thúc khám phá / Finish exploring**. Dừng đi hoặc đứng yên không tự động kết thúc hành trình.
+Mobile không tự động chụp liên tục. Nút **Chụp điểm mốc / Capture landmark** phải được VoiceOver/TalkBack đọc và kích hoạt bằng double tap. Mỗi lần kích hoạt tạo tối đa một landmark nháp; kết quả hợp lệ, không đủ bằng chứng, trùng lặp và lỗi dịch vụ đều phải được đọc thành câu hoàn chỉnh. Có một hành động riêng **Kết thúc khám phá / Finish exploring**; dừng đi hoặc đứng yên không tự động kết thúc hành trình.
+
+Tạm thời cho demo sân khấu, FastAPI có cờ server-side `DEMO_ALLOW_MOVABLE_LANDMARKS=true` để đề xuất đúng một vật nổi bật như ghế làm điểm mốc nháp. Đây không phải quy ước landmark production; ngoài demo phải đặt `false` để quay lại tiêu chí điểm mốc bền vững.
 
 Các maneuver hợp lệ:
 
@@ -81,17 +85,20 @@ OTHER
 ### Ngày thứ hai trở đi — replay deterministic
 
 ```text
-Người dùng mở graph đã publish bằng screen reader
+Mobile tải danh sách workplace từ Express và chỉ hiển thị graph PUBLISHED
+→ người dùng chọn workplace bằng tên, không nhập hoặc hard-code route ID
 → chọn điểm xuất phát
 → Express chỉ liệt kê điểm đến reachable
 → chọn điểm đến
 → Express chạy unweighted BFS để lấy FEWEST_EDGES path
-→ camera phải xác nhận đúng điểm xuất phát
+→ người dùng dừng lại và kích hoạt chụp để camera xác nhận đúng điểm xuất phát
 → Express trả câu chỉ dẫn cho cạnh đầu tiên
-→ mỗi observation sau chỉ được so với điểm mốc tiếp theo trong planned path
+→ mỗi lần chụp sau chỉ được so với điểm mốc tiếp theo trong planned path
 → match hợp lệ mới advance; mơ hồ/xung đột trả STOP_AND_RESCAN
 → đến điểm cuối thì complete
 ```
+
+Web và mobile dùng chung `GET /api/v2/routes`: web thấy cả draft/published/outdated để quản trị; mobile lọc và chỉ mở `PUBLISHED`. Sau khi web publish, người dùng làm mới danh sách workplace trên mobile để thấy graph vừa duyệt.
 
 BFS là fewest-edge path, không phải đường ngắn nhất theo mét, dễ nhất hoặc an toàn nhất. Nếu hai path có cùng số cạnh, tie-break bằng edge `displayOrder`, sau đó edge ID.
 
