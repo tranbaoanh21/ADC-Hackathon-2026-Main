@@ -40,7 +40,7 @@ Tạo `apps/api/.env` từ `apps/api/.env.example`. Để dùng PostgreSQL local
 ```dotenv
 PORT=3000
 DATABASE_URL=postgresql://pathmemory:pathmemory_local_only@localhost:5432/pathmemory
-PERSISTENCE_MODE=prisma
+PERSISTENCE_MODE=postgres
 AI_ADAPTER=mock
 AI_SERVICE_URL=http://127.0.0.1:8000
 AI_SERVICE_TOKEN=replace-with-local-token
