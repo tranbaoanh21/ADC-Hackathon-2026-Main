@@ -6,12 +6,12 @@ JSON request metadata, success response và stable error examples đã được 
 
 Example payload phải hợp lệ với OpenAPI/runtime schema và không chứa secret hoặc dữ liệu người dùng thật. Express mock và FastAPI live response phải cùng validate bằng `ai-perception-success.json`.
 
-Product API v2 graph/navigation examples:
+Product API v3 graph/navigation examples on the existing `/api/v2` prototype namespace:
 
 - `product-route-published.json`: four published landmarks with branching and reverse directed edges.
 - `product-route-edges-request.json`: admin replacement payload for human-reviewed relative directions.
 - `product-reachable-destinations.json`: screen-reader-friendly destinations reachable from the selected origin.
 - `product-navigation-session-request.json`: origin/destination selection for deterministic path planning.
 - `product-navigation-session-success.json`: planned path awaiting camera confirmation of the selected start landmark.
-- `product-navigation-start-confirmed.json`: origin match advances to the first travel edge and returns its reviewed cue.
+- `product-navigation-start-confirmed.json`: origin match advances to the first travel edge and returns deterministic narration derived from the reviewed maneuver.
 - `product-navigation-start-not-confirmed.json`: wrong origin evidence keeps the session waiting and returns no movement cue.

@@ -1,3 +1,4 @@
+import { type Language, mobileCopy } from "./i18n";
 import type { ObservationResponse } from "./types";
 
 export interface NavigationPresentation {
@@ -16,40 +17,42 @@ export function shouldApplyObservation(
 
 export function presentNavigationObservation(
   response: ObservationResponse,
+  language: Language = "vi",
 ): NavigationPresentation {
+  const copy = mobileCopy[language];
   switch (response.routeState) {
     case "AWAITING_START_CONFIRMATION":
       return {
         tone: "warning",
-        heading: "Chưa xác nhận điểm xuất phát",
+        heading: copy.routeAwaiting,
         message: response.spokenMessage,
         completed: false,
       };
     case "STOP_AND_RESCAN":
       return {
         tone: "warning",
-        heading: "Dừng lại và quét lại",
+        heading: copy.routeStop,
         message: response.spokenMessage,
         completed: false,
       };
     case "SEEKING_LANDMARK":
       return {
         tone: "info",
-        heading: "Tiếp tục đến landmark kế tiếp",
+        heading: copy.routeContinue,
         message: response.spokenMessage,
         completed: false,
       };
     case "ROUTE_COMPLETED":
       return {
         tone: "success",
-        heading: "Đã hoàn tất tuyến",
+        heading: copy.routeComplete,
         message: response.spokenMessage,
         completed: true,
       };
     case "OBSERVING":
       return {
         tone: "info",
-        heading: "Đã ghi nhận quan sát",
+        heading: copy.routeObserved,
         message: response.spokenMessage,
         completed: false,
       };

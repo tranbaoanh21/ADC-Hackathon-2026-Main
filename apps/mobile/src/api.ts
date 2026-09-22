@@ -111,11 +111,13 @@ export async function observeFrame(
   sessionId: string,
   imageUri: string,
   clientRequestId: string,
+  language: "en" | "vi",
 ): Promise<ObservationResponse> {
   const frame = new File(imageUri);
   const form = new FormData();
   form.append("clientRequestId", clientRequestId);
   form.append("capturedAt", new Date().toISOString());
+  form.append("locale", language === "en" ? "en-US" : "vi-VN");
   form.append("frames", frame, frame.name || "pathmemory-frame.jpg");
 
   try {

@@ -53,8 +53,22 @@ describe("navigation session", () => {
     expect(transition.session.status).toBe("ACTIVE");
     expect(transition.session.currentPathIndex).toBe(1);
     expect(transition.session.expectedLandmarkId).toBe(demoLandmarkIds.elevator);
-    expect(transition.spokenMessage).toContain("đi thẳng");
+    expect(transition.spokenMessage).toMatch(/đi thẳng/i);
     expect(transition.shouldAdvance).toBe(true);
+  });
+
+  it("derives an English instruction from the reviewed maneuver", () => {
+    const transition = transitionNavigationSession(
+      createMeetingRoomSession(),
+      demoGraph,
+      "MATCHED",
+      "2026-09-22T08:00:01+07:00",
+      "en-US",
+    );
+
+    expect(transition.spokenMessage).toBe(
+      "Reception confirmed. Continue straight to Elevator Level 2.",
+    );
   });
 
   it("stops and rescans without advancing on insufficient intermediate evidence", () => {
@@ -92,7 +106,7 @@ describe("navigation session", () => {
 
     expect(transition.session.currentPathIndex).toBe(2);
     expect(transition.session.expectedLandmarkId).toBe(demoLandmarkIds.meetingRoom);
-    expect(transition.spokenMessage).toContain("rẽ trái");
+    expect(transition.spokenMessage).toMatch(/rẽ trái/i);
   });
 
   it("completes only after the destination is matched", () => {

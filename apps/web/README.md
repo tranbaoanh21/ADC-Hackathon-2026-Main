@@ -2,7 +2,7 @@
 
 React/Vite là secondary client nhỏ cho human admin/buddy review; không phải bản sao đầy đủ của mobile.
 
-MVP web cần list/edit/reorder/delete/verify các draft đã tồn tại trong PostgreSQL; cấu hình directed edge bằng các dropdown from-landmark, to-landmark và maneuver (`GO_STRAIGHT`, `TURN_LEFT`, `TURN_RIGHT` hoặc lựa chọn liên quan); chỉnh spoken cue; publish graph và mark graph outdated. `displayOrder` chỉ sắp xếp danh sách, không biểu diễn vị trí. Demo hiển thị bốn landmark có một nhánh nhưng UI/data model không hard-code giới hạn. Mọi control/status phải dùng được bằng keyboard và screen reader.
+MVP web cần list/edit/reorder/delete/verify các draft đã tồn tại trong PostgreSQL; cấu hình directed edge bằng các dropdown from-landmark, to-landmark và maneuver (`GO_STRAIGHT`, `TURN_LEFT`, `TURN_RIGHT` hoặc lựa chọn liên quan); nghe trước câu đọc được tạo tự động; publish graph và mark graph outdated. `displayOrder` chỉ sắp xếp danh sách, không biểu diễn vị trí. Demo hiển thị bốn landmark có một nhánh nhưng UI/data model không hard-code giới hạn. Mọi control/status phải dùng được bằng keyboard và screen reader.
 
 Web chỉ gọi public Express API. Không đặt model key, database credential hoặc private service URL trong `VITE_*`.
 
@@ -19,8 +19,8 @@ npm run dev:web
 - mở graph bằng `Route ID` do mobile Learn tạo và làm mới landmark vừa lưu;
 - xem landmark evidence và trạng thái bằng text, không chỉ bằng màu;
 - edit/verify từng landmark draft;
-- tạo, xóa và chỉnh directed edge với `from`, `to`, maneuver và spoken cue rõ ràng;
-- phát lại spoken cue bằng browser speech synthesis;
+- tạo, xóa và chỉnh directed edge với `from`, `to` và maneuver;
+- xem/nghe lại câu đọc EN/VI được tạo deterministic bằng browser speech synthesis;
 - publish graph đủ điều kiện hoặc mark published graph outdated;
 - live-region status, alert error, visible focus và responsive layout.
 

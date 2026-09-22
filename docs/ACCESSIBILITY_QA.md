@@ -14,6 +14,8 @@ This file records evidence without treating implementation inspection as an end-
 | Web layout | Desktop screenshot inspection | Microsoft Edge on macOS, local Vite build | No visible clipping or overlap in the inspected viewport; PathMemory mark remains paired with text name |
 | Mobile compilation | Expo Android production export | Expo SDK 57 / Metro | Bundle exported successfully |
 | Mobile state safeguards | Vitest | Node 24 | Stale response, unconfirmed origin, stop-and-rescan and completion presentation tests pass |
+| Mobile focus behavior | Code inspection and TypeScript build | Expo/React Native state-machine screens | Screen changes reset scroll and request accessibility focus on the new page heading; physical VoiceOver/TalkBack verification remains pending |
+| Mobile camera semantics | Code inspection and TypeScript build | Expo Camera | Permission/ready/capture states have text and announcements; non-actionable camera preview is excluded from the accessibility tree |
 | Color contrast | Deterministic WCAG relative-luminance tests | Vitest | Every tested normal-text pair is at least 4.5:1; focus boundary is above 3:1 |
 | Raw-media retention | Code and Prisma-schema inspection | Mobile, Express and PostgreSQL layers | Temporary mobile camera file is deleted after request; Express keeps frame buffers request-local; schema has no raw-media field |
 | Safety language | Product-copy inspection | Mobile and web source | Copy says no obstacle detection, no safety assertion and no replacement for cane/guide dog/O&M |
@@ -24,13 +26,14 @@ These are implementation and measured test results, not claims that blind or low
 
 | Foreground / background | Ratio | Threshold |
 |---|---:|---:|
-| White / teal `#006D77` | 6.08:1 | 4.5:1 |
-| Navy `#102A43` / canvas `#F7FAFC` | 13.97:1 | 4.5:1 |
-| Muted `#52606D` / white | 6.46:1 | 4.5:1 |
-| Warning text `#5C4200` / warning surface `#FFF3CD` | 8.48:1 | 7:1 critical-text target |
-| Error text `#7A271A` / error surface `#FDECEC` | 8.62:1 | 7:1 critical-text target |
-| Success `#087F5B` / canvas | 4.77:1 | 4.5:1 |
-| Focus `#FFD166` / navy | 10.15:1 | 3:1 UI-boundary target |
+| White / blue `#005FCC` | 5.98:1 | 4.5:1 |
+| White / teal `#007A78` | 5.18:1 | 4.5:1 |
+| Navy `#0B1F33` / canvas `#F7FAFC` | 15.93:1 | 4.5:1 |
+| Muted `#475467` / white | 7.69:1 | 4.5:1 |
+| Warning text `#7A2E0E` / warning surface `#FFF7ED` | 8.89:1 | 7:1 critical-text target |
+| Error text `#7A271A` / error surface `#FFF4F3` | 9.14:1 | 7:1 critical-text target |
+| Success `#067647` / canvas | 5.43:1 | 4.5:1 |
+| Focus `#1570EF` / white | 4.57:1 | 3:1 UI-boundary target |
 
 The executable source is `apps/mobile/src/theme.test.ts`. Web CSS variables use the same locked core palette.
 
@@ -54,6 +57,7 @@ Actual result: `PENDING — no VoiceOver/NVDA walkthrough has been recorded`.
 Run both demo routes on a physical phone. Record phone model, OS, Expo Go/build version and VoiceOver/TalkBack version.
 
 - [ ] Screen reader reaches Learn and Navigate from Home with clear labels and hints.
+- [ ] Every screen transition scrolls to the top and moves focus exactly once to the new step heading.
 - [ ] Camera permission, camera-active state, camera-ready state and capture button are announced.
 - [ ] App TTS does not speak over VoiceOver/TalkBack; replay announces exactly one message.
 - [ ] Create a draft, scan one landmark, edit its proposed name and explicitly save it.

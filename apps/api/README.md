@@ -2,7 +2,7 @@
 
 Express/TypeScript backend chịu trách nhiệm public product API, validation, business rules, PostgreSQL, AI-service orchestration, timeout, error mapping và fallback.
 
-Scope landmark graph và Product API v2 đã chốt. Trước khi scaffold, đọc:
+Scope landmark graph và Product API v3 trên prototype route namespace `/api/v2` đã chốt. Trước khi sửa, đọc:
 
 - `docs/SOLUTION_SCOPE.md`
 - `docs/TECHNICAL_FLOW.md`
@@ -41,7 +41,7 @@ npm run db:seed --workspace @pathmemory/api
 npm run dev:api
 ```
 
-`GET /health` không gọi PostgreSQL hoặc FastAPI. Product API v2, graph kernel, in-memory/Prisma repositories, deterministic AI mock và live HTTP adapter đã được implement. Raw frame bytes chỉ tồn tại trong request memory và không có cột lưu trong database.
+`GET /health` không gọi PostgreSQL hoặc FastAPI. Product API v3, graph kernel, deterministic EN/VI navigation narration, in-memory/Prisma repositories, deterministic AI mock và live HTTP adapter đã được implement. Database chỉ lưu structured maneuver; không có authored `spokenCue`. Raw frame bytes chỉ tồn tại trong request memory và không có cột lưu trong database.
 
 ## AI adapter modes
 

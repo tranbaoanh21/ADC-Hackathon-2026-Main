@@ -40,7 +40,7 @@ Implementation must follow, in order:
 
 1. `AGENTS.md`
 2. `docs/SOLUTION_SCOPE.md`
-3. `contracts/product-api.openapi.yaml` v2.0.0
+3. `contracts/product-api.openapi.yaml` v3.0.0
 4. `contracts/ai-service.openapi.yaml` v1.1.0
 5. `docs/TECHNICAL_FLOW.md`
 6. `contracts/examples/`
@@ -53,7 +53,7 @@ If this plan conflicts with a contract or confirmed scope, the plan must be corr
 ### Bảo Anh owns in this repository
 
 - npm workspace and application scaffolding
-- Express/TypeScript Product API v2
+- Express/TypeScript Product API v3 on the existing `/api/v2` prototype namespace
 - runtime request/response validation
 - deterministic graph validation, reachability and BFS
 - navigation-session state machine and landmark matching policy
@@ -165,7 +165,7 @@ Verification on 2026-09-22:
 
 Deliverables:
 
-- [x] Product/API domain types aligned with Product API v2
+- [x] Product/API domain types aligned with Product API v3
 - [x] Four-landmark graph fixture aligned with checked-in examples
 - [x] Directed-edge validation: endpoint membership, no self-loop, no duplicate pair
 - [x] Reachable-destination traversal
@@ -197,7 +197,7 @@ Verification on 2026-09-22:
 - Typed demo fixture is asserted equal to the canonical published-route JSON example.
 - Root lint, all workspace typechecks and API/web builds passed.
 
-### Phase 2 — Express Product API v2 with deterministic mock — `COMPLETE`
+### Phase 2 — Express Product API graph/BFS flow with deterministic mock — `COMPLETE`
 
 Priority endpoints:
 
@@ -229,7 +229,7 @@ Infrastructure:
 Gate:
 
 - Supertest integration tests cover both demo paths and critical failures.
-- Returned fixtures validate against Product API v2 semantics.
+- Returned fixtures validate against Product API v3 semantics.
 - A wrong-start observation produces `shouldAdvance: false`.
 
 Verification on 2026-09-22:

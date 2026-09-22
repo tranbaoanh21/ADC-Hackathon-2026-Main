@@ -86,7 +86,7 @@ Không bắt buộc xây cả web và mobile. Sau khi đọc brief, chọn clien
 - [x] PlantUML source/rendering convention đã được định nghĩa
 - [x] Competition brief đã được nhập
 - [x] Solution scope Stage 4 đã được team chốt
-- [x] Product API v2 và AI-service v1.1 contracts đã được tạo
+- [x] Product API v3 structured-edge contract và AI-service v1.1 contract đã được tạo
 - [x] Application workspace và API/web/mobile shells đã được scaffold theo brief
 - [ ] Golden path chạy end-to-end
 

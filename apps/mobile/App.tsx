@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  AccessibilityInfo,
   ActivityIndicator,
+  findNodeHandle,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -12,9 +13,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+
 import { announceMessage, stopSpeaking } from "./src/accessible-speech";
 import {
-  API_BASE_URL,
   createRoute,
   finishSession,
   getReachableDestinations,
@@ -26,6 +27,18 @@ import {
   startNavigateSession,
 } from "./src/api";
 import { CapturePanel } from "./src/CapturePanel";
+import { type Language, landmarkTypeLabels, mobileCopy } from "./src/i18n";
+import {
+  Button,
+  Choice,
+  LanguageSwitch,
+  LogoMark,
+  ModeCard,
+  PageHeading,
+  SafetyNotice,
+  SummaryRow,
+  Surface,
+} from "./src/MobileUI";
 import { presentNavigationObservation, shouldApplyObservation } from "./src/mobile-state";
 import { colors } from "./src/theme";
 import type {
@@ -43,106 +56,23 @@ type Screen =
   | "LEARN_SETUP"
   | "LEARN_SCAN"
   | "LEARN_REVIEW"
-  | "NAV_SETUP"
+  | "NAV_ROUTE"
+  | "NAV_ORIGIN"
+  | "NAV_DESTINATION"
+  | "NAV_CONFIRM"
   | "NAV_SCAN"
   | "COMPLETE";
 
-function Button({
-  label,
-  onPress,
-  disabled = false,
-  secondary = false,
-  hint,
-}: {
-  readonly label: string;
-  readonly onPress: () => void;
-  readonly disabled?: boolean;
-  readonly secondary?: boolean;
-  readonly hint?: string;
-}) {
-  return (
-    <Pressable
-      accessibilityHint={hint}
-      accessibilityRole="button"
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        secondary ? styles.buttonSecondary : styles.buttonPrimary,
-        disabled && styles.disabled,
-        pressed && styles.pressed,
-      ]}
-    >
-      <Text style={secondary ? styles.buttonSecondaryText : styles.buttonPrimaryText}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function Choice({
-  item,
-  selected,
-  onPress,
-}: {
-  readonly item: LandmarkSummary;
-  readonly selected: boolean;
-  readonly onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityLabel={item.name}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.choice,
-        selected && styles.choiceSelected,
-        pressed && styles.pressed,
-      ]}
-    >
-      <Text style={[styles.choiceName, selected && styles.choiceNameSelected]}>{item.name}</Text>
-      <Text style={[styles.choiceMeta, selected && styles.choiceMetaSelected]}>
-        {selected ? "Đã chọn" : "Nhấn để chọn"}
-      </Text>
-    </Pressable>
-  );
-}
-
-function SafetyNotice() {
-  return (
-    <View accessibilityRole="summary" style={styles.safetyNotice}>
-      <Text style={styles.safetyTitle}>Giới hạn an toàn</Text>
-      <Text style={styles.safetyText}>
-        PathMemory chỉ xác nhận landmark đã được buddy duyệt và đọc chỉ dẫn tương đối. Ứng dụng
-        không phát hiện chướng ngại, không khẳng định đường đi an toàn và không thay thế gậy, chó
-        dẫn đường hoặc kỹ năng định hướng và di chuyển.
-      </Text>
-    </View>
-  );
-}
-
-function LogoMark() {
-  return (
-    <View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={styles.logoMark}
-    >
-      <View style={styles.logoPathVertical} />
-      <View style={styles.logoPathHorizontal} />
-      <View style={[styles.logoNode, styles.logoNodeStart]} />
-      <View style={[styles.logoNode, styles.logoNodeMiddle]} />
-      <View style={[styles.logoNode, styles.logoNodeEnd]} />
-    </View>
-  );
-}
-
 export default function App() {
+  const [language, setLanguage] = useState<Language>("en");
+  const copy = mobileCopy[language];
   const [screen, setScreen] = useState<Screen>("HOME");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [status, setStatus] = useState("Sẵn sàng.");
+  const [status, setStatus] = useState("");
+  const [showRouteCodeInput, setShowRouteCodeInput] = useState(false);
 
-  const [workplaceName, setWorkplaceName] = useState("Văn phòng demo PathMemory");
+  const [workplaceName, setWorkplaceName] = useState(copy.demoWorkplace);
   const [routeId, setRouteId] = useState(DEMO_ROUTE_ID);
   const [graph, setGraph] = useState<WorkplaceGraph | null>(null);
   const [session, setSession] = useState<RouteSession | null>(null);
@@ -156,10 +86,24 @@ export default function App() {
   const [destination, setDestination] = useState<LandmarkSummary | null>(null);
   const [expectedLandmark, setExpectedLandmark] = useState<LandmarkSummary | null>(null);
   const [lastObservation, setLastObservation] = useState<ObservationResponse | null>(null);
+
   const latestRequestId = useRef("");
   const requestCounter = useRef(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const screenHeadingRef = useRef<View>(null);
 
   useEffect(() => () => void stopSpeaking(), []);
+
+  // Each state-machine screen is a new page for screen-reader users, even though no router is used.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: screen changes must reset scroll and focus.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ animated: false, y: 0 });
+    const focusTimer = setTimeout(() => {
+      const headingHandle = findNodeHandle(screenHeadingRef.current);
+      if (headingHandle) AccessibilityInfo.setAccessibilityFocus(headingHandle);
+    }, 180);
+    return () => clearTimeout(focusTimer);
+  }, [screen]);
 
   function clearFeedback() {
     setError("");
@@ -167,9 +111,10 @@ export default function App() {
   }
 
   function describeError(value: unknown): string {
-    return value instanceof ProductApiError
-      ? value.message
-      : "Đã xảy ra lỗi ngoài dự kiến. Hãy thử lại.";
+    if (value instanceof ProductApiError) {
+      return language === "en" ? copy.genericApiError : value.message;
+    }
+    return copy.unknownError;
   }
 
   function goHome() {
@@ -182,14 +127,16 @@ export default function App() {
     setDestinations([]);
     setExpectedLandmark(null);
     setLastObservation(null);
+    setGraph(null);
     setError("");
-    setStatus("Sẵn sàng.");
+    setStatus("");
+    setShowRouteCodeInput(false);
   }
 
   async function beginLearn() {
     const name = workplaceName.trim();
     if (!name) {
-      setError("Hãy nhập tên khu vực làm việc.");
+      setError(copy.workplaceRequired);
       return;
     }
     clearFeedback();
@@ -201,7 +148,7 @@ export default function App() {
       setRouteId(newGraph.id);
       setSession(newSession);
       setSavedLandmarks(0);
-      setStatus(`Đã tạo bản nháp ${newGraph.name}. Bắt đầu quét landmark đầu tiên.`);
+      setStatus(copy.draftCreated(newGraph.name));
       setScreen("LEARN_SCAN");
     } catch (value) {
       setError(describeError(value));
@@ -217,7 +164,7 @@ export default function App() {
 
   async function captureLearnFrame(uri: string) {
     if (session?.mode !== "LEARN") {
-      setError("Phiên ghi nhận landmark không còn hoạt động.");
+      setError(copy.learnInactive);
       return;
     }
     clearFeedback();
@@ -225,11 +172,11 @@ export default function App() {
     const requestId = newRequestId();
     latestRequestId.current = requestId;
     try {
-      const response = await observeFrame(session.id, uri, requestId);
+      const response = await observeFrame(session.id, uri, requestId, language);
       if (!shouldApplyObservation(latestRequestId.current, response.requestId)) return;
       setLastObservation(response);
       setStatus(response.spokenMessage);
-      await announceMessage(response.spokenMessage);
+      await announceMessage(response.spokenMessage, language);
       if (response.candidateLandmark) {
         setCandidate(response.candidateLandmark);
         setCandidateName(response.candidateLandmark.proposedName);
@@ -245,7 +192,7 @@ export default function App() {
 
   async function saveCandidate() {
     if (!session || !candidateObservationId || !candidateName.trim()) {
-      setError("Tên landmark và bằng chứng quan sát là bắt buộc.");
+      setError(copy.nameEvidenceRequired);
       return;
     }
     clearFeedback();
@@ -256,14 +203,14 @@ export default function App() {
         candidateObservationId,
         candidateName.trim(),
       );
-      const message = `Đã lưu ${saved.name} ở trạng thái chờ buddy duyệt.`;
+      const message = copy.savedDraft(saved.name);
       setSavedLandmarks((count) => count + 1);
       setCandidate(null);
       setCandidateName("");
       setCandidateObservationId("");
       setLastObservation(null);
       setStatus(message);
-      await announceMessage(message);
+      await announceMessage(message, language);
       setScreen("LEARN_SCAN");
     } catch (value) {
       setError(describeError(value));
@@ -278,7 +225,7 @@ export default function App() {
     setBusy(true);
     try {
       await finishSession(session.id);
-      setStatus(`Đã kết thúc. ${savedLandmarks} landmark đang chờ buddy duyệt trên admin web.`);
+      setStatus(copy.learnFinished(savedLandmarks));
       setScreen("COMPLETE");
     } catch (value) {
       setError(describeError(value));
@@ -287,10 +234,10 @@ export default function App() {
     }
   }
 
-  async function loadPublishedRoute() {
-    const trimmedRouteId = routeId.trim();
+  async function loadPublishedRoute(requestedRouteId = routeId) {
+    const trimmedRouteId = requestedRouteId.trim();
     if (!trimmedRouteId) {
-      setError("Hãy nhập mã mạng landmark.");
+      setError(copy.codeRequired);
       return;
     }
     clearFeedback();
@@ -298,17 +245,14 @@ export default function App() {
     try {
       const loaded = await getRoute(trimmedRouteId);
       if (loaded.status !== "PUBLISHED") {
-        throw new ProductApiError(
-          "Mạng landmark này chưa được buddy duyệt và xuất bản.",
-          "INVALID_STATE",
-          false,
-        );
+        throw new ProductApiError(copy.mapNotPublished, "INVALID_STATE", false);
       }
       setGraph(loaded);
       setOrigin(null);
       setDestination(null);
       setDestinations([]);
-      setStatus(`Đã tải ${loaded.name}, gồm ${loaded.landmarks.length} landmark đã duyệt.`);
+      setStatus(copy.mapOpened(loaded.name, loaded.landmarks.length));
+      setScreen("NAV_ORIGIN");
     } catch (value) {
       setGraph(null);
       setError(describeError(value));
@@ -327,7 +271,12 @@ export default function App() {
     try {
       const reachable = await getReachableDestinations(graph.id, item.id);
       setDestinations(reachable.destinations);
-      setStatus(`Từ ${item.name} có ${reachable.destinations.length} điểm đến khả dụng.`);
+      if (reachable.destinations.length === 0) {
+        setError(copy.noReachableDestination(item.name));
+        return;
+      }
+      setStatus(copy.originSelected(item.name));
+      setScreen("NAV_DESTINATION");
     } catch (value) {
       setError(describeError(value));
     } finally {
@@ -335,9 +284,15 @@ export default function App() {
     }
   }
 
+  function chooseDestination(item: LandmarkSummary) {
+    clearFeedback();
+    setDestination(item);
+    setScreen("NAV_CONFIRM");
+  }
+
   async function beginNavigation() {
     if (!graph || !origin || !destination) {
-      setError("Hãy chọn điểm xuất phát và điểm đến.");
+      setError(copy.selectionRequired);
       return;
     }
     clearFeedback();
@@ -347,9 +302,9 @@ export default function App() {
       setSession(newSession);
       setExpectedLandmark(origin);
       setLastObservation(null);
-      const message = `Trước tiên hãy quét để xác nhận bạn đang đứng tại ${origin.name}.`;
+      const message = copy.confirmOrigin(origin.name);
       setStatus(message);
-      await announceMessage(message);
+      await announceMessage(message, language);
       setScreen("NAV_SCAN");
     } catch (value) {
       setError(describeError(value));
@@ -360,7 +315,7 @@ export default function App() {
 
   async function captureNavigationFrame(uri: string) {
     if (session?.mode !== "NAVIGATE") {
-      setError("Phiên định hướng không còn hoạt động.");
+      setError(copy.navigationInactive);
       return;
     }
     clearFeedback();
@@ -368,13 +323,13 @@ export default function App() {
     const requestId = newRequestId();
     latestRequestId.current = requestId;
     try {
-      const response = await observeFrame(session.id, uri, requestId);
+      const response = await observeFrame(session.id, uri, requestId, language);
       if (!shouldApplyObservation(latestRequestId.current, response.requestId)) return;
       setLastObservation(response);
       setExpectedLandmark(response.expectedLandmark);
-      const presentation = presentNavigationObservation(response);
+      const presentation = presentNavigationObservation(response, language);
       setStatus(presentation.message);
-      await announceMessage(presentation.message);
+      await announceMessage(presentation.message, language);
       if (presentation.completed) setScreen("COMPLETE");
     } catch (value) {
       setError(describeError(value));
@@ -383,9 +338,29 @@ export default function App() {
     }
   }
 
+  const showGlobalStatus =
+    Boolean(status) &&
+    screen !== "HOME" &&
+    screen !== "LEARN_REVIEW" &&
+    screen !== "NAV_SCAN" &&
+    screen !== "COMPLETE";
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.canvas} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.navy} />
+      <View style={styles.appHeader}>
+        <View style={styles.brandRow}>
+          <View accessibilityLabel={copy.brandLabel} accessible style={styles.brandIdentity}>
+            <LogoMark />
+            <View style={styles.flex}>
+              <Text style={styles.brand}>PathMemory</Text>
+              <Text style={styles.tagline}>{copy.tagline}</Text>
+            </View>
+          </View>
+          <LanguageSwitch language={language} onChange={setLanguage} />
+        </View>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.flex}
@@ -393,20 +368,13 @@ export default function App() {
         <ScrollView
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.brandRow}>
-            <LogoMark />
-            <View style={styles.flex}>
-              <Text accessibilityRole="header" style={styles.brand}>
-                PathMemory
-              </Text>
-              <Text style={styles.tagline}>Verified landmarks. Familiar journeys.</Text>
-            </View>
-          </View>
-
           {screen !== "HOME" ? (
-            <Button label="Về màn hình chính" onPress={goHome} secondary />
+            <View style={styles.topAction}>
+              <Button label={`← ${copy.home}`} onPress={goHome} variant="quiet" />
+            </View>
           ) : null}
 
           {error ? (
@@ -415,222 +383,329 @@ export default function App() {
               accessibilityRole="alert"
               style={styles.errorBox}
             >
-              <Text style={styles.errorTitle}>Không thể tiếp tục</Text>
+              <Text style={styles.errorTitle}>{copy.couldNotContinue}</Text>
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
 
-          {status ? (
-            <View accessibilityLiveRegion="polite" style={styles.statusBox}>
+          {showGlobalStatus ? (
+            <View style={styles.statusBox}>
+              <Text style={styles.statusTitle}>{copy.update}</Text>
               <Text style={styles.statusText}>{status}</Text>
             </View>
           ) : null}
 
           {busy ? (
             <View accessibilityLiveRegion="polite" style={styles.busyRow}>
-              <ActivityIndicator color="#006D77" />
-              <Text style={styles.busyText}>Đang xử lý, vui lòng đứng yên…</Text>
+              <ActivityIndicator color={colors.blue} size="small" />
+              <Text style={styles.busyText}>{copy.processing}</Text>
             </View>
           ) : null}
 
           {screen === "HOME" ? (
-            <View style={styles.section}>
-              <Text accessibilityRole="header" style={styles.heading}>
-                Bạn muốn làm gì?
-              </Text>
-              <Text style={styles.body}>
-                Ngày đầu dùng chế độ Ghi nhận cùng buddy. Những ngày sau dùng chế độ Đi theo tuyến
-                đã được buddy duyệt.
-              </Text>
-              <Button
-                hint="Tạo bản nháp landmark để buddy duyệt sau"
-                label="Ghi nhận landmark ngày đầu"
-                onPress={() => {
-                  clearFeedback();
-                  setScreen("LEARN_SETUP");
-                }}
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.homeDescription}
+                eyebrow={copy.homeEyebrow}
+                headingRef={screenHeadingRef}
+                title={copy.homeTitle}
               />
-              <Button
-                hint="Chọn điểm đầu và điểm đến trong mạng landmark đã xuất bản"
-                label="Đi theo tuyến đã duyệt"
+              <ModeCard
+                description={copy.everydayDescription}
+                label={copy.everydayLabel}
+                language={language}
                 onPress={() => {
                   clearFeedback();
                   setRouteId(DEMO_ROUTE_ID);
                   setGraph(null);
-                  setScreen("NAV_SETUP");
+                  setShowRouteCodeInput(false);
+                  setScreen("NAV_ROUTE");
                 }}
-                secondary
+                primary
+                title={copy.everydayTitle}
               />
-              <SafetyNotice />
-              <Text style={styles.apiNote}>Product API: {API_BASE_URL}</Text>
+              <ModeCard
+                description={copy.dayOneDescription}
+                label={copy.dayOneLabel}
+                language={language}
+                onPress={() => {
+                  clearFeedback();
+                  setScreen("LEARN_SETUP");
+                }}
+                title={copy.dayOneTitle}
+              />
+              <SafetyNotice compact language={language} />
             </View>
           ) : null}
 
           {screen === "LEARN_SETUP" ? (
-            <View style={styles.section}>
-              <Text accessibilityRole="header" style={styles.heading}>
-                Tạo bản nháp nơi làm việc
-              </Text>
-              <Text style={styles.body}>
-                Đi cùng buddy. Mỗi lần chỉ quét một biển hoặc lối vào ổn định; AI đề xuất, còn buddy
-                duyệt trên web trước khi xuất bản.
-              </Text>
-              <Text style={styles.label}>Tên khu vực</Text>
-              <TextInput
-                accessibilityLabel="Tên khu vực làm việc"
-                editable={!busy}
-                onChangeText={setWorkplaceName}
-                style={styles.input}
-                value={workplaceName}
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.learnSetupDescription}
+                eyebrow={copy.learnStep1}
+                headingRef={screenHeadingRef}
+                title={copy.learnSetupTitle}
               />
+              <Surface>
+                <Text style={styles.surfaceTitle}>{copy.buddyRole}</Text>
+                <Text style={styles.body}>{copy.buddyRoleDescription}</Text>
+              </Surface>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>{copy.workplaceName}</Text>
+                <TextInput
+                  accessibilityLabel={copy.workplaceName}
+                  editable={!busy}
+                  onChangeText={setWorkplaceName}
+                  placeholder={copy.workplacePlaceholder}
+                  placeholderTextColor={colors.disabledText}
+                  returnKeyType="done"
+                  style={styles.input}
+                  value={workplaceName}
+                />
+              </View>
               <Button
                 disabled={busy}
-                label="Tạo bản nháp và bắt đầu"
+                hint={copy.createDraftHint}
+                label={copy.createDraft}
                 onPress={() => void beginLearn()}
               />
             </View>
           ) : null}
 
           {screen === "LEARN_SCAN" ? (
-            <View style={styles.section}>
-              <Text accessibilityRole="header" style={styles.heading}>
-                Quét landmark ổn định
-              </Text>
-              <Text style={styles.counter}>{savedLandmarks} landmark đã lưu chờ duyệt</Text>
-              <Text selectable style={styles.routeCode}>
-                Mã bản nháp: {routeId}
-              </Text>
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.learnScanDescription}
+                eyebrow={copy.learnStep2}
+                headingRef={screenHeadingRef}
+                title={copy.learnScanTitle}
+              />
+              <View style={styles.countCard}>
+                <Text style={styles.countValue}>{savedLandmarks}</Text>
+                <Text style={styles.countLabel}>{copy.savedForReview}</Text>
+              </View>
               <CapturePanel
                 busy={busy}
+                language={language}
                 onCapture={captureLearnFrame}
-                purpose="Đứng yên trước một biển, cửa phòng hoặc khu vực thang máy. Mở camera rồi chụp một frame rõ nét."
+                purpose={copy.learnCapturePurpose}
               />
+              <Surface>
+                <Text style={styles.routeCodeLabel}>{copy.draftCodeForBuddy}</Text>
+                <Text
+                  accessibilityLabel={copy.draftCodeLabel(routeId)}
+                  selectable
+                  style={styles.routeCode}
+                >
+                  {routeId}
+                </Text>
+              </Surface>
               <Button
                 disabled={busy}
-                label="Kết thúc phiên ghi nhận"
+                label={copy.finishRecording}
                 onPress={() => void endLearn()}
-                secondary
+                variant="secondary"
               />
             </View>
           ) : null}
 
           {screen === "LEARN_REVIEW" && candidate ? (
-            <View style={styles.section}>
-              <Text accessibilityRole="header" style={styles.heading}>
-                Kiểm tra đề xuất AI
-              </Text>
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>Loại landmark</Text>
-                <Text style={styles.cardValue}>{candidate.type}</Text>
-                <Text style={styles.cardLabel}>Mô tả nháp</Text>
-                <Text style={styles.cardValue}>{candidate.draftDescription}</Text>
-                <Text style={styles.cardLabel}>Chữ nhìn thấy</Text>
-                <Text style={styles.cardValue}>
-                  {candidate.visibleText.join(", ") || "Không có"}
-                </Text>
-              </View>
-              <Text style={styles.label}>Tên landmark muốn lưu</Text>
-              <TextInput
-                accessibilityLabel="Tên landmark muốn lưu"
-                editable={!busy}
-                onChangeText={setCandidateName}
-                style={styles.input}
-                value={candidateName}
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.reviewProposalDescription}
+                eyebrow={copy.learnStep3}
+                headingRef={screenHeadingRef}
+                title={copy.reviewProposalTitle}
               />
+              <Surface>
+                <View style={styles.aiDraftTag}>
+                  <Text style={styles.aiDraftTagText}>{copy.capturedSuggestion}</Text>
+                </View>
+                <SummaryRow
+                  label={copy.placeType}
+                  value={landmarkTypeLabels[language][candidate.type]}
+                />
+                <SummaryRow label={copy.capturedDescription} value={candidate.draftDescription} />
+                <SummaryRow
+                  label={copy.visibleText}
+                  value={candidate.visibleText.join(", ") || copy.noReadableText}
+                />
+              </Surface>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>{copy.placeNameToSave}</Text>
+                <TextInput
+                  accessibilityLabel={copy.placeNameToSave}
+                  editable={!busy}
+                  onChangeText={setCandidateName}
+                  selectTextOnFocus
+                  style={styles.input}
+                  value={candidateName}
+                />
+              </View>
               <Button
                 disabled={busy}
-                label="Lưu bản nháp để buddy duyệt"
+                label={copy.saveForBuddy}
                 onPress={() => void saveCandidate()}
               />
               <Button
                 disabled={busy}
-                label="Bỏ kết quả và quét lại"
+                label={copy.discardAndRescan}
                 onPress={() => {
                   setCandidate(null);
                   setCandidateObservationId("");
                   setScreen("LEARN_SCAN");
                 }}
-                secondary
+                variant="secondary"
               />
             </View>
           ) : null}
 
-          {screen === "NAV_SETUP" ? (
-            <View style={styles.section}>
-              <Text accessibilityRole="header" style={styles.heading}>
-                Chọn tuyến đã duyệt
-              </Text>
-              <Text style={styles.body}>
-                Mặc định là mạng demo bốn landmark. Chỉ mạng đã xuất bản mới có thể dùng để định
-                hướng.
-              </Text>
-              <Text style={styles.label}>Mã mạng landmark</Text>
-              <TextInput
-                accessibilityLabel="Mã mạng landmark đã xuất bản"
-                autoCapitalize="none"
-                editable={!busy}
-                onChangeText={setRouteId}
-                style={styles.input}
-                value={routeId}
+          {screen === "NAV_ROUTE" ? (
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.openWorkplaceDescription}
+                eyebrow={copy.navStep1}
+                headingRef={screenHeadingRef}
+                title={copy.openWorkplaceTitle}
               />
-              <Button
-                disabled={busy}
-                label="Tải mạng landmark"
-                onPress={() => void loadPublishedRoute()}
-              />
-
-              {graph ? (
-                <View style={styles.subsection}>
-                  <Text accessibilityRole="header" style={styles.subheading}>
-                    1. Chọn điểm xuất phát
-                  </Text>
-                  {graph.landmarks.map((item) => (
-                    <Choice
-                      item={item}
-                      key={item.id}
-                      onPress={() => void chooseOrigin(item)}
-                      selected={origin?.id === item.id}
-                    />
-                  ))}
-                </View>
-              ) : null}
-
-              {origin ? (
-                <View style={styles.subsection}>
-                  <Text accessibilityRole="header" style={styles.subheading}>
-                    2. Chọn điểm đến có thể tới
-                  </Text>
-                  {destinations.map((item) => (
-                    <Choice
-                      item={item}
-                      key={item.id}
-                      onPress={() => setDestination(item)}
-                      selected={destination?.id === item.id}
-                    />
-                  ))}
-                </View>
-              ) : null}
-
-              {origin && destination ? (
+              <Surface>
+                <Text style={styles.routeCardLabel}>{copy.savedWorkplace}</Text>
+                <Text style={styles.routeCardTitle}>{copy.demoWorkplace}</Text>
+                <Text style={styles.body}>{copy.demoWorkplaceDescription}</Text>
                 <Button
                   disabled={busy}
-                  label={`Bắt đầu từ ${origin.name} đến ${destination.name}`}
-                  onPress={() => void beginNavigation()}
+                  label={copy.openDemo}
+                  onPress={() => void loadPublishedRoute(DEMO_ROUTE_ID)}
                 />
-              ) : null}
-              <SafetyNotice />
+              </Surface>
+
+              {showRouteCodeInput ? (
+                <Surface>
+                  <Text style={styles.surfaceTitle}>{copy.useAnotherCode}</Text>
+                  <Text style={styles.body}>{copy.codeHelp}</Text>
+                  <TextInput
+                    accessibilityLabel={copy.workplaceCode}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!busy}
+                    onChangeText={setRouteId}
+                    placeholder={copy.codePlaceholder}
+                    placeholderTextColor={colors.disabledText}
+                    style={styles.input}
+                    value={routeId}
+                  />
+                  <Button
+                    disabled={busy}
+                    label={copy.openWithCode}
+                    onPress={() => void loadPublishedRoute()}
+                    variant="secondary"
+                  />
+                </Surface>
+              ) : (
+                <Button
+                  label={copy.useAnotherCode}
+                  onPress={() => {
+                    setRouteId("");
+                    setShowRouteCodeInput(true);
+                  }}
+                  variant="quiet"
+                />
+              )}
+            </View>
+          ) : null}
+
+          {screen === "NAV_ORIGIN" && graph ? (
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.chooseOriginDescription(graph.name)}
+                eyebrow={copy.navStep2}
+                headingRef={screenHeadingRef}
+                title={copy.chooseOriginTitle}
+              />
+              <View accessibilityRole="radiogroup" style={styles.choiceList}>
+                {graph.landmarks.map((item, index) => (
+                  <Choice
+                    index={index}
+                    item={item}
+                    key={item.id}
+                    language={language}
+                    onPress={() => void chooseOrigin(item)}
+                    selected={origin?.id === item.id}
+                  />
+                ))}
+              </View>
+              <Button
+                label={copy.backToWorkplace}
+                onPress={() => setScreen("NAV_ROUTE")}
+                variant="quiet"
+              />
+            </View>
+          ) : null}
+
+          {screen === "NAV_DESTINATION" && origin ? (
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.chooseDestinationDescription(origin.name)}
+                eyebrow={copy.navStep3}
+                headingRef={screenHeadingRef}
+                title={copy.chooseDestinationTitle}
+              />
+              <View accessibilityRole="radiogroup" style={styles.choiceList}>
+                {destinations.map((item, index) => (
+                  <Choice
+                    index={index}
+                    item={item}
+                    key={item.id}
+                    language={language}
+                    onPress={() => chooseDestination(item)}
+                    selected={destination?.id === item.id}
+                  />
+                ))}
+              </View>
+              <Button
+                label={copy.chooseOriginAgain}
+                onPress={() => setScreen("NAV_ORIGIN")}
+                variant="quiet"
+              />
+            </View>
+          ) : null}
+
+          {screen === "NAV_CONFIRM" && origin && destination ? (
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.confirmJourneyDescription}
+                eyebrow={copy.navStep4}
+                headingRef={screenHeadingRef}
+                title={copy.confirmJourneyTitle}
+              />
+              <Surface>
+                <SummaryRow label={copy.startingPoint} value={origin.name} />
+                <SummaryRow label={copy.destination} value={destination.name} />
+                <SummaryRow label={copy.guidance} value={copy.guidanceValue} />
+              </Surface>
+              <SafetyNotice language={language} />
+              <Button
+                disabled={busy}
+                hint={copy.startJourneyHint(origin.name)}
+                label={copy.startJourney}
+                onPress={() => void beginNavigation()}
+              />
+              <Button
+                label={copy.chooseDestinationAgain}
+                onPress={() => setScreen("NAV_DESTINATION")}
+                variant="quiet"
+              />
             </View>
           ) : null}
 
           {screen === "NAV_SCAN" ? (
-            <View style={styles.section}>
-              <Text accessibilityRole="header" style={styles.heading}>
-                Xác nhận landmark
-              </Text>
-              <View style={styles.expectedCard}>
-                <Text style={styles.cardLabel}>Landmark cần xác nhận</Text>
-                <Text style={styles.expectedName}>{expectedLandmark?.name ?? "Đang cập nhật"}</Text>
-              </View>
+            <View style={styles.screen}>
+              <PageHeading
+                description={copy.scanDescription}
+                eyebrow={copy.navigating}
+                headingRef={screenHeadingRef}
+                title={expectedLandmark?.name ?? copy.scanTitleFallback}
+              />
               {lastObservation ? (
                 <View
                   accessibilityLiveRegion="polite"
@@ -641,39 +716,69 @@ export default function App() {
                       : styles.instructionCard
                   }
                 >
-                  <Text style={styles.instructionHeading}>
-                    {presentNavigationObservation(lastObservation).heading}
+                  <Text style={styles.instructionEyebrow}>
+                    {presentNavigationObservation(lastObservation, language).heading}
                   </Text>
                   <Text style={styles.instructionText}>{lastObservation.spokenMessage}</Text>
                   <Button
-                    label="Đọc lại hướng dẫn"
-                    onPress={() => void announceMessage(lastObservation.spokenMessage)}
-                    secondary
+                    label={copy.replayGuidance}
+                    onPress={() => void announceMessage(lastObservation.spokenMessage, language)}
+                    variant="secondary"
                   />
                 </View>
-              ) : null}
+              ) : (
+                <View style={styles.instructionCard}>
+                  <Text style={styles.instructionEyebrow}>{copy.firstConfirmation}</Text>
+                  <Text style={styles.instructionText}>{status}</Text>
+                  <Button
+                    label={copy.replayGuidance}
+                    onPress={() => void announceMessage(status, language)}
+                    variant="secondary"
+                  />
+                </View>
+              )}
               <CapturePanel
                 busy={busy}
+                language={language}
                 onCapture={captureNavigationFrame}
-                purpose={`Đứng yên và hướng camera về dấu hiệu của ${expectedLandmark?.name ?? "landmark cần xác nhận"}.`}
+                purpose={copy.navCapturePurpose(expectedLandmark?.name ?? copy.scanTitleFallback)}
               />
-              <SafetyNotice />
+              <SafetyNotice compact language={language} />
+              <Button label={copy.stopJourney} onPress={goHome} variant="danger" />
             </View>
           ) : null}
 
           {screen === "COMPLETE" ? (
-            <View style={styles.section}>
-              <Text accessibilityRole="header" style={styles.heading}>
-                Hoàn tất
-              </Text>
-              <Text style={styles.body}>{status}</Text>
+            <View style={styles.screen}>
+              <PageHeading
+                description={status}
+                eyebrow={
+                  graph?.status === "DRAFT"
+                    ? copy.learnCompleteEyebrow
+                    : copy.journeyCompleteEyebrow
+                }
+                headingRef={screenHeadingRef}
+                title={graph?.status === "DRAFT" ? copy.sentForReview : copy.arrived}
+              />
               {graph?.status === "DRAFT" ? (
-                <Text selectable style={styles.routeCode}>
-                  Gửi mã {graph.id} cho buddy để mở trên admin web, duyệt landmark và tạo chỉ dẫn
-                  tương đối.
-                </Text>
-              ) : null}
-              <Button label="Về màn hình chính" onPress={goHome} />
+                <Surface>
+                  <Text style={styles.surfaceTitle}>{copy.handoffCode}</Text>
+                  <Text
+                    accessibilityLabel={copy.draftCodeLabel(graph.id)}
+                    selectable
+                    style={styles.routeCode}
+                  >
+                    {graph.id}
+                  </Text>
+                  <Text style={styles.body}>{copy.handoffHelp}</Text>
+                </Surface>
+              ) : (
+                <Surface>
+                  <Text style={styles.completionMark}>✓</Text>
+                  <Text style={styles.completionText}>{copy.completionHelp}</Text>
+                </Surface>
+              )}
+              <Button label={copy.returnHome} onPress={goHome} />
             </View>
           ) : null}
         </ScrollView>
@@ -683,162 +788,154 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.canvas, flex: 1 },
+  safeArea: { backgroundColor: colors.navy, flex: 1 },
   flex: { flex: 1 },
-  container: { gap: 18, padding: 22, paddingBottom: 48 },
-  brandRow: { alignItems: "center", flexDirection: "row", gap: 14 },
-  logoMark: {
+  appHeader: {
+    backgroundColor: colors.navy,
+    borderBottomColor: "rgba(255,255,255,0.14)",
+    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+  },
+  brandRow: {
     alignItems: "center",
-    backgroundColor: colors.teal,
-    borderRadius: 16,
-    height: 56,
-    justifyContent: "center",
-    width: 56,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
   },
-  logoPathVertical: {
-    backgroundColor: colors.surface,
-    height: 34,
-    left: 17,
-    position: "absolute",
-    top: 11,
-    width: 4,
+  brandIdentity: { alignItems: "center", flex: 1, flexDirection: "row", gap: 12 },
+  brand: { color: colors.surface, fontSize: 21, fontWeight: "800", letterSpacing: -0.35 },
+  tagline: { color: "#D7E5F4", fontSize: 12, lineHeight: 17 },
+  container: {
+    backgroundColor: colors.canvas,
+    flexGrow: 1,
+    gap: 16,
+    paddingBottom: 48,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  logoPathHorizontal: {
-    backgroundColor: colors.surface,
-    height: 4,
-    left: 19,
-    position: "absolute",
-    top: 14,
-    width: 21,
-  },
-  logoNode: {
-    backgroundColor: colors.surface,
-    borderRadius: 6,
-    height: 11,
-    position: "absolute",
-    width: 11,
-  },
-  logoNodeStart: { left: 13, top: 7 },
-  logoNodeMiddle: { left: 35, top: 10 },
-  logoNodeEnd: { left: 13, top: 38 },
-  brand: { color: colors.navy, fontSize: 26, fontWeight: "800" },
-  tagline: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  section: { gap: 16 },
-  subsection: { gap: 10, marginTop: 8 },
-  heading: { color: colors.navy, fontSize: 30, fontWeight: "800", lineHeight: 37 },
-  subheading: { color: colors.navy, fontSize: 22, fontWeight: "700", lineHeight: 29 },
-  body: { color: "#334E68", fontSize: 18, lineHeight: 27 },
-  label: { color: "#102A43", fontSize: 17, fontWeight: "700" },
+  topAction: { alignItems: "flex-start" },
+  screen: { gap: 18 },
+  choiceList: { gap: 12 },
+  fieldGroup: { gap: 8 },
+  body: { color: colors.muted, fontSize: 16, lineHeight: 25 },
+  label: { color: colors.navy, fontSize: 17, fontWeight: "700" },
   input: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#627D98",
-    borderRadius: 12,
-    borderWidth: 2,
-    color: "#102A43",
-    fontSize: 18,
-    minHeight: 56,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  button: {
-    alignItems: "center",
-    borderRadius: 12,
-    justifyContent: "center",
-    minHeight: 56,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-  },
-  buttonPrimary: { backgroundColor: colors.teal },
-  buttonSecondary: {
     backgroundColor: colors.surface,
-    borderColor: colors.teal,
-    borderWidth: 2,
-  },
-  buttonPrimaryText: { color: "#FFFFFF", fontSize: 18, fontWeight: "700", textAlign: "center" },
-  buttonSecondaryText: { color: "#005760", fontSize: 18, fontWeight: "700", textAlign: "center" },
-  disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.75 },
-  statusBox: { backgroundColor: "#E7F5F5", borderRadius: 12, padding: 14 },
-  statusText: { color: "#17494D", fontSize: 16, lineHeight: 24 },
-  errorBox: {
-    backgroundColor: "#FDECEC",
-    borderColor: "#B42318",
+    borderColor: colors.inputLine,
     borderRadius: 12,
-    borderWidth: 2,
-    padding: 14,
+    borderWidth: 1.5,
+    color: colors.navy,
+    fontSize: 18,
+    minHeight: 58,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
-  errorTitle: { color: "#7A271A", fontSize: 18, fontWeight: "800", marginBottom: 4 },
-  errorText: { color: "#7A271A", fontSize: 16, lineHeight: 24 },
-  busyRow: { alignItems: "center", flexDirection: "row", gap: 10 },
-  busyText: { color: "#334E68", fontSize: 16 },
-  safetyNotice: {
-    backgroundColor: "#FFF3CD",
-    borderColor: "#D8A900",
+  surfaceTitle: { color: colors.navy, fontSize: 19, fontWeight: "800", lineHeight: 25 },
+  statusBox: {
+    backgroundColor: colors.successSoft,
+    borderColor: "#ABEFC6",
     borderRadius: 12,
     borderWidth: 1,
-    gap: 6,
+    gap: 4,
     padding: 14,
   },
-  safetyTitle: { color: "#5C4200", fontSize: 17, fontWeight: "800" },
-  safetyText: { color: "#5C4200", fontSize: 15, lineHeight: 23 },
-  apiNote: { color: "#627D98", fontSize: 12 },
-  counter: { color: "#087F5B", fontSize: 18, fontWeight: "700" },
+  statusTitle: { color: colors.success, fontSize: 14, fontWeight: "800" },
+  statusText: { color: "#085D3A", fontSize: 16, lineHeight: 23 },
+  errorBox: {
+    backgroundColor: colors.errorSoft,
+    borderColor: colors.error,
+    borderRadius: 12,
+    borderWidth: 2,
+    gap: 4,
+    padding: 14,
+  },
+  errorTitle: { color: colors.errorText, fontSize: 18, fontWeight: "800" },
+  errorText: { color: colors.errorText, fontSize: 16, lineHeight: 24 },
+  busyRow: {
+    alignItems: "center",
+    backgroundColor: colors.infoSoft,
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 10,
+    padding: 14,
+  },
+  busyText: { color: colors.infoText, flex: 1, fontSize: 16, fontWeight: "600" },
+  countCard: {
+    alignItems: "baseline",
+    backgroundColor: colors.tealSoft,
+    borderColor: "#99E4DF",
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 9,
+    padding: 16,
+  },
+  countValue: { color: colors.tealDark, fontSize: 30, fontWeight: "800" },
+  countLabel: { color: colors.tealText, flexShrink: 1, fontSize: 16, fontWeight: "600" },
+  routeCodeLabel: { color: colors.muted, fontSize: 14, fontWeight: "700" },
   routeCode: {
-    backgroundColor: "#E8EEF3",
+    backgroundColor: colors.canvas,
+    borderColor: colors.line,
     borderRadius: 10,
-    color: "#243B53",
-    fontSize: 15,
-    lineHeight: 22,
+    borderWidth: 1,
+    color: colors.navy,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontSize: 14,
+    lineHeight: 21,
     padding: 12,
   },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#BCCCDC",
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 5,
-    padding: 16,
+  aiDraftTag: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.infoSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  cardLabel: {
-    color: "#52606D",
+  aiDraftTagText: { color: colors.infoText, fontSize: 13, fontWeight: "800" },
+  routeCardLabel: {
+    color: colors.tealDark,
     fontSize: 14,
-    fontWeight: "700",
-    marginTop: 5,
+    fontWeight: "800",
+    letterSpacing: 0.35,
     textTransform: "uppercase",
   },
-  cardValue: { color: "#102A43", fontSize: 18, lineHeight: 26 },
-  choice: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#829AB1",
-    borderRadius: 12,
-    borderWidth: 2,
-    gap: 3,
-    minHeight: 64,
-    padding: 14,
-  },
-  choiceSelected: { backgroundColor: "#006D77", borderColor: "#FFD166", borderWidth: 3 },
-  choiceName: { color: "#102A43", fontSize: 18, fontWeight: "700" },
-  choiceNameSelected: { color: "#FFFFFF" },
-  choiceMeta: { color: "#627D98", fontSize: 14 },
-  choiceMetaSelected: { color: "#E7F5F5" },
-  expectedCard: { backgroundColor: "#102A43", borderRadius: 14, gap: 6, padding: 18 },
-  expectedName: { color: "#FFFFFF", fontSize: 25, fontWeight: "800" },
+  routeCardTitle: { color: colors.navy, fontSize: 23, fontWeight: "800", lineHeight: 29 },
   instructionCard: {
-    backgroundColor: "#E7F5F5",
-    borderColor: "#006D77",
-    borderRadius: 14,
+    backgroundColor: colors.infoSoft,
+    borderColor: colors.blue,
+    borderRadius: 16,
     borderWidth: 2,
-    gap: 10,
-    padding: 16,
+    gap: 12,
+    padding: 18,
   },
   warningCard: {
-    backgroundColor: "#FFF3CD",
-    borderColor: "#D8A900",
-    borderRadius: 14,
+    backgroundColor: colors.warningSoft,
+    borderColor: colors.warning,
+    borderRadius: 16,
     borderWidth: 2,
-    gap: 10,
-    padding: 16,
+    gap: 12,
+    padding: 18,
   },
-  instructionHeading: { color: "#102A43", fontSize: 20, fontWeight: "800" },
-  instructionText: { color: "#243B53", fontSize: 18, lineHeight: 27 },
+  instructionEyebrow: {
+    color: colors.navy,
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 0.25,
+    textTransform: "uppercase",
+  },
+  instructionText: { color: colors.navy, fontSize: 21, fontWeight: "700", lineHeight: 31 },
+  completionMark: {
+    alignSelf: "center",
+    color: colors.success,
+    fontSize: 48,
+    fontWeight: "800",
+  },
+  completionText: {
+    color: colors.navy,
+    fontSize: 18,
+    lineHeight: 27,
+    textAlign: "center",
+  },
 });

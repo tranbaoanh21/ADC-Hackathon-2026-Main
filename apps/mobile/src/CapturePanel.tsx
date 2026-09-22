@@ -2,15 +2,19 @@ import { type CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { announceMessage } from "./accessible-speech";
+import { type Language, mobileCopy } from "./i18n";
 import { colors } from "./theme";
 
 interface CapturePanelProps {
   readonly busy: boolean;
+  readonly language: Language;
   readonly purpose: string;
   readonly onCapture: (uri: string) => Promise<void>;
 }
 
-export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
+export function CapturePanel({ busy, language, purpose, onCapture }: CapturePanelProps) {
+  const copy = mobileCopy[language];
   const camera = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -28,14 +32,21 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
     if (!picture?.uri) return;
     setCameraOpen(false);
     setCameraReady(false);
+    await announceMessage(copy.cameraProcessingAnnouncement, language);
     await onCapture(picture.uri);
+  }
+
+  function handleCameraReady() {
+    if (cameraReady) return;
+    setCameraReady(true);
+    void announceMessage(copy.cameraReadyAnnouncement, language);
   }
 
   if (!permission) {
     return (
-      <View style={styles.panel} accessibilityLiveRegion="polite">
-        <ActivityIndicator color={colors.teal} />
-        <Text style={styles.help}>Đang kiểm tra quyền camera…</Text>
+      <View accessibilityLiveRegion="polite" style={styles.panel}>
+        <ActivityIndicator color={colors.blue} />
+        <Text style={styles.help}>{copy.cameraChecking}</Text>
       </View>
     );
   }
@@ -44,18 +55,16 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
     return (
       <View style={styles.panel}>
         <Text accessibilityRole="header" style={styles.panelTitle}>
-          Cần quyền camera
+          {copy.cameraPermissionTitle}
         </Text>
-        <Text style={styles.help}>
-          Camera chỉ chụp khi bạn nhấn nút. Ảnh tạm bị xóa sau khi Express xử lý.
-        </Text>
+        <Text style={styles.help}>{copy.cameraPermissionHelp}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Cho phép PathMemory dùng camera"
+          accessibilityLabel={copy.cameraPermissionTitle}
           onPress={() => void requestPermission()}
           style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryButtonText}>Cho phép camera</Text>
+          <Text style={styles.primaryButtonText}>{copy.continuePermission}</Text>
         </Pressable>
       </View>
     );
@@ -64,11 +73,14 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
   if (!cameraOpen) {
     return (
       <View style={styles.panel}>
+        <View style={styles.stepTag}>
+          <Text style={styles.stepTagText}>{copy.cameraClosed}</Text>
+        </View>
         <Text style={styles.help}>{purpose}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Mở camera để quét một landmark"
-          accessibilityHint="Camera sau sẽ mở. Ảnh chỉ được chụp khi nhấn nút chụp."
+          accessibilityLabel={copy.cameraOpenLabel}
+          accessibilityHint={copy.cameraOpenHint}
           disabled={busy}
           onPress={() => setCameraOpen(true)}
           style={({ pressed }) => [
@@ -77,7 +89,7 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
             pressed && styles.pressed,
           ]}
         >
-          <Text style={styles.primaryButtonText}>{busy ? "Đang xử lý…" : "Mở camera"}</Text>
+          <Text style={styles.primaryButtonText}>{busy ? copy.processing : copy.openCamera}</Text>
         </Pressable>
       </View>
     );
@@ -85,19 +97,24 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
 
   return (
     <View style={styles.cameraPanel}>
-      <Text accessibilityLiveRegion="polite" style={styles.cameraStatus}>
-        Camera đang mở. Hướng camera về biển hoặc lối vào landmark rồi đứng yên.
-      </Text>
+      <View accessibilityLiveRegion="polite" style={styles.cameraStatus}>
+        <Text style={styles.cameraStatusTitle}>
+          {cameraReady ? copy.cameraReady : copy.cameraStarting}
+        </Text>
+        <Text style={styles.cameraStatusText}>{copy.cameraPositionHelp}</Text>
+      </View>
       <CameraView
-        accessibilityLabel="Khung xem trước camera sau"
+        accessibilityElementsHidden
         facing={facing}
-        onCameraReady={() => setCameraReady(true)}
+        importantForAccessibility="no-hide-descendants"
+        onCameraReady={handleCameraReady}
         ref={camera}
         style={styles.camera}
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Chụp một frame để xác nhận landmark"
+        accessibilityHint={copy.captureHint}
+        accessibilityLabel={copy.captureLandmark}
         disabled={!cameraReady || busy}
         onPress={() => void capture()}
         style={({ pressed }) => [
@@ -107,10 +124,11 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
         ]}
       >
         <Text style={styles.primaryButtonText}>
-          {cameraReady ? "Chụp và phân tích" : "Đang khởi động camera…"}
+          {cameraReady ? copy.captureLandmark : copy.cameraStartingButton}
         </Text>
       </Pressable>
       <Pressable
+        accessibilityLabel={copy.closeCamera}
         accessibilityRole="button"
         onPress={() => {
           setCameraOpen(false);
@@ -118,7 +136,7 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
         }}
         style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
       >
-        <Text style={styles.secondaryButtonText}>Đóng camera</Text>
+        <Text style={styles.secondaryButtonText}>{copy.closeCamera}</Text>
       </Pressable>
     </View>
   );
@@ -126,18 +144,26 @@ export function CapturePanel({ busy, purpose, onCapture }: CapturePanelProps) {
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: colors.tealSoft,
-    borderColor: "#8BC6C9",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
     borderRadius: 16,
     borderWidth: 1,
     gap: 14,
     padding: 18,
   },
   panelTitle: { color: colors.navy, fontSize: 22, fontWeight: "700" },
-  help: { color: "#243B53", fontSize: 17, lineHeight: 25 },
+  help: { color: colors.muted, fontSize: 17, lineHeight: 26 },
+  stepTag: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.tealSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  stepTagText: { color: colors.tealDark, fontSize: 13, fontWeight: "800" },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: colors.teal,
+    backgroundColor: colors.blue,
     borderRadius: 12,
     justifyContent: "center",
     minHeight: 56,
@@ -146,8 +172,8 @@ const styles = StyleSheet.create({
   },
   captureButton: {
     alignItems: "center",
-    backgroundColor: colors.teal,
-    borderColor: colors.focus,
+    backgroundColor: colors.blue,
+    borderColor: colors.navy,
     borderRadius: 12,
     borderWidth: 3,
     justifyContent: "center",
@@ -158,24 +184,32 @@ const styles = StyleSheet.create({
   secondaryButton: {
     alignItems: "center",
     backgroundColor: colors.surface,
-    borderColor: colors.teal,
+    borderColor: colors.blue,
     borderRadius: 12,
     borderWidth: 2,
     justifyContent: "center",
     minHeight: 52,
     padding: 12,
   },
-  secondaryButtonText: { color: "#005760", fontSize: 17, fontWeight: "700" },
+  secondaryButtonText: { color: colors.blueDark, fontSize: 17, fontWeight: "700" },
   cameraPanel: { gap: 12 },
-  camera: { aspectRatio: 3 / 4, borderRadius: 16, overflow: "hidden", width: "100%" },
-  cameraStatus: {
-    backgroundColor: colors.warningSoft,
-    borderRadius: 10,
-    color: colors.warningText,
-    fontSize: 16,
-    lineHeight: 23,
-    padding: 12,
+  camera: {
+    aspectRatio: 3 / 4,
+    backgroundColor: colors.navy,
+    borderRadius: 16,
+    overflow: "hidden",
+    width: "100%",
   },
+  cameraStatus: {
+    backgroundColor: colors.infoSoft,
+    borderColor: "#B2DDFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 4,
+    padding: 14,
+  },
+  cameraStatusTitle: { color: colors.infoText, fontSize: 17, fontWeight: "800" },
+  cameraStatusText: { color: colors.navy, fontSize: 15, lineHeight: 23 },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.75 },
 });

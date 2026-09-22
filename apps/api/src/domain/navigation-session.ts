@@ -1,9 +1,11 @@
 import { getGraphEdge, getGraphLandmark, planFewestEdgesPath } from "./graph.js";
+import { arrivalNarration, movementNarration, rescanNarration } from "./navigation-copy.js";
 import {
   type LandmarkMatchStatus,
   type NavigationSession,
   type NavigationTransition,
   ProductDomainError,
+  type ProductLocale,
   toLandmarkSummary,
   type WorkplaceGraph,
 } from "./types.js";
@@ -42,6 +44,7 @@ function rescanTransition(
   session: NavigationSession,
   graph: WorkplaceGraph,
   matchStatus: Exclude<LandmarkMatchStatus, "MATCHED">,
+  locale: ProductLocale,
 ): NavigationTransition {
   const expected = session.expectedLandmarkId
     ? toLandmarkSummary(getGraphLandmark(graph, session.expectedLandmarkId))
@@ -53,9 +56,11 @@ function rescanTransition(
     routeState: awaitingStart ? "AWAITING_START_CONFIRMATION" : "STOP_AND_RESCAN",
     landmarkMatchStatus: matchStatus,
     expectedLandmark: expected,
-    spokenMessage: awaitingStart
-      ? `Chưa xác nhận được ${expected?.name ?? "landmark xuất phát"}. Hãy đứng yên, hướng camera về biển chỉ dẫn và quét lại.`
-      : `Chưa xác nhận được ${expected?.name ?? "landmark tiếp theo"}. Hãy dừng lại và quét lại.`,
+    spokenMessage: rescanNarration(
+      expected?.name ?? (locale === "en-US" ? "the expected landmark" : "landmark cần tìm"),
+      awaitingStart,
+      locale,
+    ),
     shouldAdvance: false,
   };
 }
@@ -65,6 +70,7 @@ export function transitionNavigationSession(
   graph: WorkplaceGraph,
   matchStatus: LandmarkMatchStatus,
   observedAt: string,
+  locale: ProductLocale = "vi-VN",
 ): NavigationTransition {
   if (session.status === "COMPLETED" || session.status === "CANCELLED") {
     throw new ProductDomainError("INVALID_STATE", "The navigation session is not active.");
@@ -75,7 +81,7 @@ export function transitionNavigationSession(
   }
 
   if (matchStatus !== "MATCHED") {
-    return rescanTransition(session, graph, matchStatus);
+    return rescanTransition(session, graph, matchStatus, locale);
   }
 
   const currentIndex = session.currentPathIndex;
@@ -99,7 +105,7 @@ export function transitionNavigationSession(
       routeState: "ROUTE_COMPLETED",
       landmarkMatchStatus: "MATCHED",
       expectedLandmark: null,
-      spokenMessage: `Đã đến ${destination.name}.`,
+      spokenMessage: arrivalNarration(destination.name, locale),
       shouldAdvance: true,
     };
   }
@@ -133,7 +139,7 @@ export function transitionNavigationSession(
     routeState: "SEEKING_LANDMARK",
     landmarkMatchStatus: "MATCHED",
     expectedLandmark: toLandmarkSummary(nextLandmark),
-    spokenMessage: `Đã xác nhận ${currentLandmark.name}. ${outgoingEdge.spokenCue}`,
+    spokenMessage: movementNarration(currentLandmark, nextLandmark, outgoingEdge.maneuver, locale),
     shouldAdvance: true,
   };
 }

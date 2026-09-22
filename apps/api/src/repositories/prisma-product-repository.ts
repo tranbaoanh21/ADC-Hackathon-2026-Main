@@ -52,7 +52,6 @@ function mapGraph(record: StoredGraph): WorkplaceGraph {
         fromLandmarkId: edge.fromLandmarkId,
         toLandmarkId: edge.toLandmarkId,
         maneuver: edge.maneuver,
-        spokenCue: edge.spokenCue,
       }))
       .sort(
         (left, right) => left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
@@ -203,7 +202,6 @@ export class PrismaProductRepository implements ProductRepository {
             fromLandmarkId: edge.fromLandmarkId,
             toLandmarkId: edge.toLandmarkId,
             maneuver: edge.maneuver,
-            spokenCue: edge.spokenCue,
           })),
         });
       }

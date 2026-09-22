@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PathMemory Product API
-  version: 2.0.0
+  version: 3.0.0
   description: >-
     Public API owned by the Express application backend. Mobile and web call
     this API only. AI perception is internal and never exposed directly to a
@@ -142,6 +142,11 @@ paths:
                 capturedAt:
                   type: string
                   format: date-time
+                locale:
+                  type: string
+                  enum: [en-US, vi-VN]
+                  default: vi-VN
+                  description: Language used for deterministic product narration and AI text extraction.
                 frames:
                   type: array
                   minItems: 1
@@ -740,7 +745,7 @@ components:
     RouteEdgeInput:
       type: object
       additionalProperties: false
-      required: [displayOrder, fromLandmarkId, toLandmarkId, maneuver, spokenCue]
+      required: [displayOrder, fromLandmarkId, toLandmarkId, maneuver]
       properties:
         displayOrder:
           type: integer
@@ -754,14 +759,10 @@ components:
           format: uuid
         maneuver:
           $ref: '#/components/schemas/RelativeManeuver'
-        spokenCue:
-          type: string
-          minLength: 1
-          maxLength: 300
     RouteEdge:
       type: object
       additionalProperties: false
-      required: [id, displayOrder, fromLandmarkId, toLandmarkId, maneuver, spokenCue]
+      required: [id, displayOrder, fromLandmarkId, toLandmarkId, maneuver]
       properties:
         id:
           type: string
@@ -778,16 +779,13 @@ components:
           format: uuid
         maneuver:
           $ref: '#/components/schemas/RelativeManeuver'
-        spokenCue:
-          type: string
-          minLength: 1
-          maxLength: 300
     RelativeManeuver:
       type: string
       enum: [GO_STRAIGHT, TURN_LEFT, TURN_RIGHT, TAKE_ELEVATOR, ENTER_DOOR, OTHER]
       description: >-
-        Human-reviewed relative instruction after recognising the source
-        landmark. It is not an exact angle, distance or safety assertion.
+        Human-reviewed relative movement after recognising the source
+        landmark. Express turns this structured value into localised narration;
+        it is not an exact angle, distance or safety assertion.
     NavigationPath:
       type: object
       additionalProperties: false

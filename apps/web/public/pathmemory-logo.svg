@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" role="img" aria-labelledby="title desc">
+  <title id="title">PathMemory horizontal logo</title>
+  <desc id="desc">A verified path connecting three landmark nodes, followed by the PathMemory wordmark.</desc>
+  <g fill="none" stroke="#0B1F33" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 64 C52 64 50 30 76 30 C102 30 98 64 126 64"/>
+  </g>
+  <circle cx="28" cy="64" r="11" fill="#007A78" stroke="#F7FAFC" stroke-width="4"/>
+  <circle cx="76" cy="30" r="11" fill="#005FCC" stroke="#F7FAFC" stroke-width="4"/>
+  <circle cx="126" cy="64" r="13" fill="#005FCC" stroke="#F7FAFC" stroke-width="4"/>
+  <path d="M120 64l5 5 10-12" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="162" y="61" fill="#0B1F33" font-family="Atkinson Hyperlegible, Inter, system-ui, sans-serif" font-size="39" font-weight="700" letter-spacing="-0.7">PathMemory</text>
+</svg>

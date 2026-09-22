@@ -28,6 +28,10 @@ export const relativeManeuvers = [
 
 export type RelativeManeuver = (typeof relativeManeuvers)[number];
 
+export const productLocales = ["en-US", "vi-VN"] as const;
+
+export type ProductLocale = (typeof productLocales)[number];
+
 export interface Landmark {
   readonly id: string;
   readonly displayOrder: number;
@@ -45,7 +49,6 @@ export interface RouteEdge {
   readonly fromLandmarkId: string;
   readonly toLandmarkId: string;
   readonly maneuver: RelativeManeuver;
-  readonly spokenCue: string;
 }
 
 export interface WorkplaceGraph {

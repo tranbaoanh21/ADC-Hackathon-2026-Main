@@ -6,6 +6,7 @@ import multer from "multer";
 import type { AiAdapter } from "../ai/ai-adapter.js";
 import { getGraphLandmark, listReachableDestinations, validateGraph } from "../domain/graph.js";
 import { matchExpectedLandmark, normalizeLandmarkText } from "../domain/landmark-match.js";
+import { learnNarration } from "../domain/navigation-copy.js";
 import {
   createNavigationSession,
   transitionNavigationSession,
@@ -107,13 +108,6 @@ function toProductCandidate(candidate: CandidateLandmark): CandidateLandmark {
   };
 }
 
-function learnNarration(candidate: CandidateLandmark | null): string {
-  if (!candidate) {
-    return "Chưa nhận diện được landmark ổn định. Hãy đứng yên và quét lại biển hoặc lối vào.";
-  }
-  return `Đã nhận diện ${candidate.proposedName}. Bạn có thể lưu landmark này để buddy duyệt.`;
-}
-
 export function createProductRouter(dependencies: ProductRouterDependencies): Router {
   const router = Router();
   const { repository, aiAdapter } = dependencies;
@@ -202,6 +196,7 @@ export function createProductRouter(dependencies: ProductRouterDependencies): Ro
       const metadata = observationMetadataSchema.parse({
         clientRequestId: request.body.clientRequestId,
         capturedAt: request.body.capturedAt,
+        locale: request.body.locale,
       });
       const files = request.files as Express.Multer.File[] | undefined;
       if (!files || files.length === 0) {
@@ -229,7 +224,7 @@ export function createProductRouter(dependencies: ProductRouterDependencies): Ro
 
       const rawPerception = await aiAdapter.analyseFrames({
         requestId: metadata.clientRequestId,
-        locale: "vi-VN",
+        locale: metadata.locale,
         analysisMode: session.mode === "LEARN" ? "LANDMARK_DISCOVERY" : "LANDMARK_OBSERVATION",
         frames: files.map((file) => ({ bytes: file.buffer, contentType: file.mimetype })),
       });
@@ -270,7 +265,7 @@ export function createProductRouter(dependencies: ProductRouterDependencies): Ro
           landmarkMatchStatus: candidate ? "CANDIDATE" : "INSUFFICIENT_EVIDENCE",
           candidateLandmark: candidate,
           expectedLandmark: null,
-          spokenMessage: learnNarration(candidate),
+          spokenMessage: learnNarration(candidate?.proposedName ?? null, metadata.locale),
           shouldAdvance: false,
           retryAllowed: true,
         };
@@ -293,6 +288,7 @@ export function createProductRouter(dependencies: ProductRouterDependencies): Ro
           graph,
           matchStatus,
           metadata.capturedAt,
+          metadata.locale,
         );
         await repository.saveSession(transition.session);
         productResponse = {

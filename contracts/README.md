@@ -4,7 +4,7 @@ Source of truth cho ranh giới giữa client, Express và FastAPI.
 
 Current contract versions:
 
-- Product API `2.0.0`: published landmark graph, reachable destinations, deterministic navigation planning and directed `RouteEdge` relations.
+- Product API `3.0.0`: published landmark graph, reachable destinations, deterministic navigation planning and directed `RouteEdge` relations. Edge narration is derived from the reviewed maneuver instead of being authored or stored.
 - AI service `1.1.0`: perception only, with extensible workplace landmark categories; independent of total route landmark count.
 
 Files:
@@ -44,7 +44,9 @@ Versioning:
 - Removing/renaming a field, making an optional field required or changing its meaning is breaking.
 - Never let provider-specific raw output leak into either contract.
 
-Product API `2.0.0` is a breaking change from the fixed linear-route v1 contract:
+Product API `3.0.0` retains the `/api/v2` route namespace used by the prototype, but removes authored `spokenCue` values from the Product API `2.0.0` graph contract. Consumers now send and receive structured maneuvers only; Express produces localised narration deterministically.
+
+The graph model remains a breaking change from the fixed linear-route v1 contract:
 
 - a route resource now represents one bounded workplace landmark graph;
 - origin and destination are selected per `NAVIGATE` session;

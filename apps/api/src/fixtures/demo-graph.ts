@@ -53,7 +53,6 @@ export const demoGraph = {
       fromLandmarkId: "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
       toLandmarkId: "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       maneuver: "GO_STRAIGHT",
-      spokenCue: "Từ Reception, đi thẳng để tìm biển Level 2 cạnh thang máy.",
     },
     {
       id: "65a345da-0928-47a2-98f5-ae6560313a3d",
@@ -61,7 +60,6 @@ export const demoGraph = {
       fromLandmarkId: "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       toLandmarkId: "ffb52187-b769-4a0f-96b3-456292839602",
       maneuver: "TURN_LEFT",
-      spokenCue: "Từ thang máy tầng 2, rẽ trái và tìm biển Meeting Room A.",
     },
     {
       id: "a388647a-1e03-471e-9719-5c6d7ced01a4",
@@ -69,7 +67,6 @@ export const demoGraph = {
       fromLandmarkId: "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       toLandmarkId: "8c66e120-5a64-4c39-9a43-477effcc1d28",
       maneuver: "TURN_RIGHT",
-      spokenCue: "Từ thang máy tầng 2, rẽ phải và tìm biển Restroom.",
     },
     {
       id: "a6d05b8b-6389-4f59-91e5-3ac1aed0cd37",
@@ -77,7 +74,6 @@ export const demoGraph = {
       fromLandmarkId: "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       toLandmarkId: "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
       maneuver: "GO_STRAIGHT",
-      spokenCue: "Từ thang máy tầng 2, đi thẳng để trở lại Reception.",
     },
     {
       id: "f49c9e84-0818-4a47-95c8-ad2b97ea5a13",
@@ -85,7 +81,6 @@ export const demoGraph = {
       fromLandmarkId: "ffb52187-b769-4a0f-96b3-456292839602",
       toLandmarkId: "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       maneuver: "TURN_RIGHT",
-      spokenCue: "Từ Meeting Room A, rẽ phải và tìm khu vực thang máy tầng 2.",
     },
     {
       id: "ec80876c-4688-4e0a-b6ae-352d9b44aa9c",
@@ -93,7 +88,6 @@ export const demoGraph = {
       fromLandmarkId: "8c66e120-5a64-4c39-9a43-477effcc1d28",
       toLandmarkId: "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       maneuver: "TURN_LEFT",
-      spokenCue: "Từ Restroom, rẽ trái và tìm khu vực thang máy tầng 2.",
     },
   ],
   createdAt: "2026-09-21T09:00:00+07:00",

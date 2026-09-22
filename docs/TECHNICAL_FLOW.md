@@ -40,13 +40,13 @@ Model      ─X→ graph path, route advance, publish or safety decision
 - List stored `AI_DRAFT`, `BUDDY_VERIFIED`, `PUBLISHED` and `OUTDATED` landmarks.
 - Edit name, type, description and stable admin `displayOrder`.
 - Verify or reject drafts.
-- Create each directed edge with accessible from-landmark, to-landmark and maneuver dropdowns plus editable spoken cue.
+- Create each directed edge with accessible from-landmark, to-landmark and maneuver dropdowns. Preview narration generated from those structured fields; the buddy does not author prose.
 - Show graph validation errors, publish the verified graph and mark it outdated.
 - Support keyboard and screen-reader use with named controls and announced status.
 
 ### Express — Bảo Anh
 
-- Only public API for mobile/web; implement `contracts/product-api.openapi.yaml` v2.0.0.
+- Only public API for mobile/web; implement `contracts/product-api.openapi.yaml` v3.0.0 on the existing `/api/v2` prototype namespace.
 - Validate requests/responses and return the stable error envelope.
 - Store accepted candidate landmarks as `AI_DRAFT`; AI never writes the database.
 - Own deduplication, human-review transitions and graph publication.
@@ -63,7 +63,7 @@ Minimum planned entities:
 - `Route`: legacy Product API name for one bounded workplace graph; name, status, timestamps.
 - `Landmark`: stable place identity, name, type, visible text, stable features and review status.
 - `RouteLandmark`: graph membership and `displayOrder`; display order is not a coordinate/path position.
-- `RouteEdge`: graph ID, source/destination landmark IDs, relative maneuver, spoken cue and admin `displayOrder`.
+- `RouteEdge`: graph ID, source/destination landmark IDs, relative maneuver and admin `displayOrder`. Spoken narration is derived and is not stored.
 - `RouteSession`: mode, status, selected origin/destination, planned path and current path index.
 - `Observation`: structured summary, request ID, quality, model/prompt version and latency; no raw frame.
 - `LandmarkReview`: edits, reviewer role, state transition and timestamp.
@@ -121,7 +121,7 @@ The admin does not move an object from a temporary store into the database. Draf
 7. Session starts AWAITING_START_CONFIRMATION with expectedLandmarkId = origin.
 8. Mobile asks the employee to face the selected origin and capture an observation.
 9. FastAPI returns perception; Express matches only against the expected origin.
-10. If confirmed, Express changes to the first travel step and returns its reviewed spoken cue.
+10. If confirmed, Express changes to the first travel step and returns localised narration generated from the reviewed maneuver and endpoint names.
 11. The employee moves using their cane/guide dog/O&M skills; the app does not detect obstacles.
 12. At the next landmark, another observation is matched against only that expected landmark.
 13. A match increments currentPathIndex and returns the next edge cue.
@@ -167,10 +167,10 @@ The admin does not move an object from a temporary store into the database. Draf
 
 ## Contract and repository ownership
 
-- Product API v2 source: `contracts/product-api.openapi.yaml` — Bảo Anh.
+- Product API v3 source: `contracts/product-api.openapi.yaml` — Bảo Anh; prototype routes remain under `/api/v2`.
 - AI service v1.1 source: `contracts/ai-service.openapi.yaml` — Hồng Phúc produces, Bảo Anh consumes.
 - Shared payload fixtures: `contracts/examples/`.
-- Product API v2 is intentionally breaking from the old fixed linear-route API.
+- Product API v3 removes authored cue persistence while retaining the directed-graph/BFS behavior introduced after the old fixed linear-route API.
 - AI-service v1.1 is unchanged by graph/path selection; Hồng Phúc does not need Product API routing code.
 - Any AI contract semantic/breaking change requires both owners to update examples and validators together.
 

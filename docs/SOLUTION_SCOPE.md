@@ -19,7 +19,7 @@ Last updated: `2026-09-21`
 - Day 1 creates a bounded workplace landmark graph from a guided walk with a buddy.
 - Mobile Learn is the only Day-1 graph creator. Web opens that same draft using the Route ID shown on mobile; it does not create a parallel graph.
 - AI proposes landmark drafts. Express validates and stores each accepted proposal immediately as `AI_DRAFT`; admin approval is a later state transition, not the first database write.
-- Admin/buddy edits and verifies landmarks, then creates directed `RouteEdge` records with a relative maneuver and spoken cue before publishing the graph.
+- Admin/buddy edits and verifies landmarks, then creates directed `RouteEdge` records by selecting from/to landmarks and a relative maneuver. Express derives the spoken instruction; the buddy does not author it.
 - Day 2 onward, the employee uses a screen reader to select a published origin landmark and a reachable destination landmark. Express computes a deterministic path over the published graph.
 - The mobile camera must confirm the selected origin before the first movement cue is announced. Later observations confirm progress at the next expected landmark.
 - Landmark position is topological only. No exact indoor coordinate, metric distance or angle is stored.
@@ -61,8 +61,8 @@ Employee and human buddy start a LEARN session
 → buddy enters the mobile-created Route ID on the accessible admin web
 → web reloads and lists the drafts already stored by Express
 → admin edits and marks each accepted landmark BUDDY_VERIFIED
-→ admin creates directed edges using from-landmark, to-landmark,
-  maneuver dropdown and editable spoken cue
+→ admin creates directed edges using from-landmark, to-landmark
+  and maneuver dropdowns; narration is generated deterministically
 → Express validates graph references/topology
 → admin publishes the verified landmark graph
 ```
@@ -191,7 +191,7 @@ Hosted vision provider
 - Mobile is the primary employee client; web is a small admin/buddy console.
 - Express is the only public API and owns all product/database/graph behavior.
 - FastAPI is an internal perception service owned by Hồng Phúc.
-- Canonical interfaces are `contracts/product-api.openapi.yaml` v2.0.0 and `contracts/ai-service.openapi.yaml` v1.1.0.
+- Canonical interfaces are `contracts/product-api.openapi.yaml` v3.0.0 and `contracts/ai-service.openapi.yaml` v1.1.0. The Product API retains the current `/api/v2` prototype route namespace.
 
 ## Privacy and safety
 
@@ -206,7 +206,7 @@ Hosted vision provider
 
 | Area | Owner | Deliverable |
 |---|---|---|
-| Mobile, web, Express and PostgreSQL | Bảo Anh | Clients, Product API v2, graph/path/session logic, persistence, AI adapter, accessibility and application deployment |
+| Mobile, web, Express and PostgreSQL | Bảo Anh | Clients, Product API v3, graph/path/session/narration logic, persistence, AI adapter, accessibility and application deployment |
 | FastAPI and model pipeline | Hồng Phúc | AI-service v1.1, preprocessing, provider adapter, structured perception, AI tests/eval and AI-service deployment |
 | Shared AI boundary | Bảo Anh + Hồng Phúc | Compatible OpenAPI, examples, validators and integration tests |
 | Admin/buddy review | Bảo Anh | Accessible landmark/edge review and graph publication |

@@ -53,7 +53,7 @@ function attachObservation(
     });
 }
 
-describe("PathMemory Product API v2", () => {
+describe("PathMemory Product API v3 contract", () => {
   it("returns the published graph and deterministic reachable destinations", async () => {
     const app = createApp();
 
@@ -129,7 +129,7 @@ describe("PathMemory Product API v2", () => {
     expect(confirmed.status).toBe(200);
     expect(confirmed.body.routeState).toBe("SEEKING_LANDMARK");
     expect(confirmed.body.expectedLandmark.id).toBe(demoLandmarkIds.elevator);
-    expect(confirmed.body.spokenMessage).toContain("đi thẳng");
+    expect(confirmed.body.spokenMessage).toMatch(/đi thẳng/i);
   });
 
   it("completes the Reception to Restroom path and never advances on an unreadable frame", async () => {
@@ -188,7 +188,7 @@ describe("PathMemory Product API v2", () => {
       "2026-09-22T08:00:03+07:00",
     );
     expect(elevator.body.expectedLandmark.id).toBe(demoLandmarkIds.restroom);
-    expect(elevator.body.spokenMessage).toContain("rẽ phải");
+    expect(elevator.body.spokenMessage).toMatch(/rẽ phải/i);
 
     const destination = await attachObservation(
       request(app).post(`/api/v2/sessions/${sessionId}/observations`),
@@ -352,7 +352,6 @@ describe("PathMemory Product API v2", () => {
             fromLandmarkId: firstLandmarkId,
             toLandmarkId: secondLandmarkId,
             maneuver: "GO_STRAIGHT",
-            spokenCue: "Đi thẳng và tìm biển Level 2 cạnh thang máy.",
           },
         ],
       });

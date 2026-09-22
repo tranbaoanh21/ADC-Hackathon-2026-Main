@@ -100,7 +100,6 @@ model RouteEdge {
   fromLandmarkId String           @db.Uuid
   toLandmarkId   String           @db.Uuid
   maneuver       RelativeManeuver
-  spokenCue      String           @db.VarChar(300)
   route          Route            @relation(fields: [routeId], references: [id], onDelete: Cascade)
   fromLandmark   RouteLandmark    @relation("EdgeFrom", fields: [routeId, fromLandmarkId], references: [routeId, landmarkId], onDelete: Cascade)
   toLandmark     RouteLandmark    @relation("EdgeTo", fields: [routeId, toLandmarkId], references: [routeId, landmarkId], onDelete: Cascade)

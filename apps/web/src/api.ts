@@ -40,7 +40,6 @@ export interface RouteEdge {
   readonly fromLandmarkId: string;
   readonly toLandmarkId: string;
   readonly maneuver: RelativeManeuver;
-  readonly spokenCue: string;
 }
 
 export interface WorkplaceGraph {
@@ -122,7 +121,6 @@ export const productApi = {
       fromLandmarkId: string;
       toLandmarkId: string;
       maneuver: RelativeManeuver;
-      spokenCue: string;
     }[],
   ) {
     return apiRequest<WorkplaceGraph>(`/api/v2/routes/${encodeURIComponent(routeId)}/edges`, {

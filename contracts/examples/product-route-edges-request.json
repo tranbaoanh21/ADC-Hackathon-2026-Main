@@ -4,43 +4,37 @@
       "displayOrder": 0,
       "fromLandmarkId": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
       "toLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
-      "maneuver": "GO_STRAIGHT",
-      "spokenCue": "Từ Reception, đi thẳng để tìm biển Level 2 cạnh thang máy."
+      "maneuver": "GO_STRAIGHT"
     },
     {
       "displayOrder": 1,
       "fromLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       "toLandmarkId": "ffb52187-b769-4a0f-96b3-456292839602",
-      "maneuver": "TURN_LEFT",
-      "spokenCue": "Từ thang máy tầng 2, rẽ trái và tìm biển Meeting Room A."
+      "maneuver": "TURN_LEFT"
     },
     {
       "displayOrder": 2,
       "fromLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       "toLandmarkId": "8c66e120-5a64-4c39-9a43-477effcc1d28",
-      "maneuver": "TURN_RIGHT",
-      "spokenCue": "Từ thang máy tầng 2, rẽ phải và tìm biển Restroom."
+      "maneuver": "TURN_RIGHT"
     },
     {
       "displayOrder": 3,
       "fromLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
       "toLandmarkId": "e5b3ab8c-5de9-40dc-9a11-d9795ddc46f6",
-      "maneuver": "GO_STRAIGHT",
-      "spokenCue": "Từ thang máy tầng 2, đi thẳng để trở lại Reception."
+      "maneuver": "GO_STRAIGHT"
     },
     {
       "displayOrder": 4,
       "fromLandmarkId": "ffb52187-b769-4a0f-96b3-456292839602",
       "toLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
-      "maneuver": "TURN_RIGHT",
-      "spokenCue": "Từ Meeting Room A, rẽ phải và tìm khu vực thang máy tầng 2."
+      "maneuver": "TURN_RIGHT"
     },
     {
       "displayOrder": 5,
       "fromLandmarkId": "8c66e120-5a64-4c39-9a43-477effcc1d28",
       "toLandmarkId": "c6c985c1-dd8b-4d58-bf4b-ed83e7b196ac",
-      "maneuver": "TURN_LEFT",
-      "spokenCue": "Từ Restroom, rẽ trái và tìm khu vực thang máy tầng 2."
+      "maneuver": "TURN_LEFT"
     }
   ]
 }

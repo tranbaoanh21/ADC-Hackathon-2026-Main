@@ -36,7 +36,6 @@ export interface RouteEdge {
     | "TAKE_ELEVATOR"
     | "ENTER_DOOR"
     | "OTHER";
-  readonly spokenCue: string;
 }
 
 export interface WorkplaceGraph {

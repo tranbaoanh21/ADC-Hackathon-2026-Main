@@ -40,7 +40,7 @@ Sau khi đọc context và xác nhận scope, tạo branch riêng:
 git switch -c feat/<scope-ngan-gon>
 ```
 
-Không tạo branch implementation nếu `docs/SOLUTION_SCOPE.md` vẫn là `UNDECIDED`, trừ branch chỉ dùng để cập nhật brief, research hoặc contracts. Scope Stage 4 hiện đã được xác nhận; application implementation phải tuân thủ Product API v2, AI-service v1.1 và các non-goals đã ghi.
+Không tạo branch implementation nếu `docs/SOLUTION_SCOPE.md` vẫn là `UNDECIDED`, trừ branch chỉ dùng để cập nhật brief, research hoặc contracts. Scope Stage 4 hiện đã được xác nhận; application implementation phải tuân thủ Product API v3 trên prototype namespace `/api/v2`, AI-service v1.1 và các non-goals đã ghi.
 
 ## New thread boot sequence
 

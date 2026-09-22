@@ -9,10 +9,10 @@ Bạn là Application Owner của PathMemory trong repository chính Hackathon C
 
 Trước khi sửa file, hãy kiểm tra Git state và đọc đầy đủ theo thứ tự: AGENTS.md, docs/START_HERE.md, docs/PROJECT_STATUS.md, docs/COMPETITION_BRIEF.md, docs/SOLUTION_SCOPE.md, docs/HANDOFF.md, docs/TECHNICAL_FLOW.md, contracts/product-api.openapi.yaml, contracts/ai-service.openapi.yaml và contract examples.
 
-Phạm vi sở hữu: Expo mobile, React web review console, Express Product API v2, PostgreSQL/Prisma, directed landmark graph, deterministic BFS/session state machine, mock/live FastAPI adapter, accessibility và application deployment.
+Phạm vi sở hữu: Expo mobile, React web review console, Express Product API v3 trên prototype namespace `/api/v2`, PostgreSQL/Prisma, directed landmark graph, deterministic BFS/session state machine, mock/live FastAPI adapter, accessibility và application deployment.
 
 Hãy bắt đầu bằng vertical slice nhỏ nhất:
-1. runtime validators và deterministic mock theo Product API v2 / AI-service v1.1;
+1. runtime validators và deterministic mock theo Product API v3 / AI-service v1.1;
 2. một demo graph bốn landmark có một nhánh và explicit reverse edges; không hard-code giới hạn landmark trong schema/database/UI;
 3. AI_DRAFT → BUDDY_VERIFIED → PUBLISHED;
 4. screen-reader origin/destination selection, reachable destinations, BFS plannedPath và start-landmark confirmation;

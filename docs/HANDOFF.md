@@ -1,22 +1,22 @@
 # Team Handoff
 
-Current state: Product API v2, Prisma/PostgreSQL persistence, React admin review console, Expo mobile Learn/Navigate flows, Express live adapter and Hồng Phúc's FastAPI perception service are implemented. Express-to-FastAPI mock integration passes. Device/screen-reader QA, deployment and one real end-to-end Gemini smoke remain pending.
+Current state: Product API v3 structured-edge contract on the existing `/api/v2` namespace, Prisma/PostgreSQL persistence, React admin review console, Expo mobile Learn/Navigate flows, Express live adapter and Hồng Phúc's FastAPI perception service are implemented. Buddy selects from/to/maneuver on web; Express generates EN/VI narration and no authored cue is stored. Express-to-FastAPI mock integration passes. Device/screen-reader QA, deployment and one real end-to-end Gemini smoke remain pending.
 
 Application execution is tracked in root `PLAN.md`. Integration is performed on `codex/integrate-fastapi-perception` from application commit `f06ead3` and AI commit `7dac78d`. Hồng Phúc's perception-only AI-service boundary remains unchanged.
 
-Application progress on 2026-09-22: the graph/BFS/session kernel, every Product API v2 endpoint, in-memory/Prisma repositories, migration/seed, AI mock/live adapters, FastAPI mock/Gemini providers, React admin review/publish UI and Expo Learn/Navigate camera flows are implemented. API/database/adapter/FastAPI tests, an Express-to-FastAPI mock smoke, Edge accessibility-tree/browser smoke, mobile unit tests and Android bundle export pass. Actual VoiceOver/TalkBack, physical-camera E2E, deployment and a real end-to-end Gemini smoke remain pending. This integration does not change either shared OpenAPI contract.
+Application progress on 2026-09-22: the graph/BFS/session kernel, Product API endpoints, in-memory/Prisma repositories, migrations/seed, AI mock/live adapters, FastAPI mock/Gemini providers, React admin review/publish UI and Expo Learn/Navigate camera flows are implemented. Product API v3 removes authored `spokenCue`; AI-service v1.1 is unchanged. All 48 API/database tests pass on a clean isolated PostgreSQL, together with lint, typecheck and production builds. Actual VoiceOver/TalkBack, physical-camera E2E, deployment and a real end-to-end Gemini smoke remain pending.
 
 ## Current integration boundary
 
-- Product contract: `contracts/product-api.openapi.yaml` v2.0.0
+- Product contract: `contracts/product-api.openapi.yaml` v3.0.0 on the existing `/api/v2` prototype route namespace
 - AI-service contract: `contracts/ai-service.openapi.yaml` v1.1.0
 - Examples: `contracts/examples/`
 - Technical flow: `docs/TECHNICAL_FLOW.md`
-- Express Product API v2: implemented and tested against in-memory repositories
+- Express Product API v3 contract: implemented on the existing `/api/v2` namespace and tested against in-memory and PostgreSQL repositories
 - Mock/live providers: Express HTTP adapter plus FastAPI deterministic mock and Gemini adapter implemented; Express-to-FastAPI mock smoke passed, real end-to-end Gemini smoke pending
 - Database schema: Prisma 7.10 schema, migration, constraints, seed and runtime adapter implemented and verified
-- Admin web: opens the mobile-created draft by Route ID, reloads newly stored candidates, then supports landmark review, directed-edge editing, cue replay, publish/outdated and accessible error/status behavior; web does not create a parallel graph
-- Expo mobile: explicit per-scan camera, Day-1 draft/save, screen-reader origin/destination selection, stale-response suppression, TTS/screen-reader coordination, replay, safety copy and route completion implemented
+- Admin web: opens the mobile-created draft by Route ID, reloads stored candidates, supports landmark review, directed from/to/maneuver editing, generated EN/VI cue preview/replay, publish/outdated and accessible error/status behavior; web does not create a parallel graph
+- Expo mobile: step-based Learn/Navigate screens, focus reset on screen changes, explicit per-scan camera, Day-1 draft/save, screen-reader origin/destination selection, stale-response suppression, TTS/screen-reader coordination, replay, safety copy and route completion implemented
 - Accessibility evidence: executable palette contrast checks, Edge accessibility-tree/layout smoke and manual device matrices recorded in `docs/ACCESSIBILITY_QA.md`; physical screen-reader runs remain pending
 - Deployment: not started
 
@@ -105,7 +105,7 @@ Task objective: Replace fixed-route replay with a bounded, human-reviewed landma
 
 Confirmed product:
 - Day 1: a blind/low-vision employee explores a bounded office area with a human buddy. AI proposes structured candidates; Express stores explicitly accepted candidates as AI_DRAFT in PostgreSQL.
-- Mobile Learn creates the only Day-1 draft graph and shows its Route ID. Admin web opens that same ID and reloads the stored drafts; it does not receive realtime push or create a parallel graph. Admin edits/verifies landmarks, creates directed from/to edges, chooses a relative maneuver, edits the spoken cue and publishes the graph.
+- Mobile Learn creates the only Day-1 draft graph and shows its Route ID. Admin web opens that same ID and reloads the stored drafts; it does not receive realtime push or create a parallel graph. Admin edits/verifies landmarks, creates directed from/to edges, chooses a relative maneuver and publishes the graph. Express generates EN/VI narration; no authored cue is stored.
 - Day 2+: the employee uses a screen reader to select an origin and a destination reachable through published directed edges.
 - Express computes a deterministic FEWEST_EDGES path with BFS and starts in AWAITING_START_CONFIRMATION.
 - Camera perception must confirm the selected origin before Express returns the first movement cue. Later matches advance only along plannedPath.
@@ -120,12 +120,12 @@ Demo graph:
 - One branch and explicit reverse edges for supported return travel.
 
 Ownership:
-- Bảo Anh: Expo mobile, React web, Express, PostgreSQL/Prisma, Product API v2, graph validation, BFS, session FSM, mock/live AI adapter, accessibility and application deployment.
+- Bảo Anh: Expo mobile, React web, Express, PostgreSQL/Prisma, Product API v3, graph validation, BFS, session FSM, deterministic narration, mock/live AI adapter, accessibility and application deployment.
 - Hồng Phúc: FastAPI repository/runtime, AI-service v1.1, provider adapter, preprocessing, prompt, structured perception, Pydantic validation, AI eval and AI-service deployment.
 - Shared: AI-service semantics, examples, integration tests and breaking changes.
 
 Contract impact:
-- Product API 2.0.0 is breaking: /api/v2 paths, graph semantics, displayOrder, reachable destinations, origin/destination session request, plannedPath and start confirmation.
+- Product API 3.0.0 removes authored `spokenCue` values from edge input/output while retaining the `/api/v2` prototype route namespace. Graph semantics, reachable destinations, BFS planning and start confirmation are unchanged.
 - AI-service 1.1.0 is unchanged. FastAPI still implements POST /internal/v1/perception and never computes product routes.
 - Mock and live AI responses must validate against the same AI-service schema.
 
@@ -153,7 +153,7 @@ FastAPI producer impact
 Example/test updates
 ```
 
-Do not merge a breaking AI-boundary change until both owners have compatible implementations or an agreed transition. Product API v2 changes do not require FastAPI to implement graph/path behavior.
+Do not merge a breaking AI-boundary change until both owners have compatible implementations or an agreed transition. Product API changes do not require FastAPI to implement graph/path/narration behavior.
 
 ## Handoff rules
 

@@ -106,6 +106,92 @@ Kết quả nào có thể đo được?
 - Ưu tiên hosted API, mock fallback và implementation nhỏ có thể kiểm tra.
 - Khi golden path đã chạy, chuyển sang accessibility, eval, deployment và pitch thay vì tiếp tục mở rộng.
 
+### 3.1. Locked implementation context — PathMemory
+
+Phần này là context sản phẩm đã được team chốt ngày `2026-09-22` và phải được mọi thành viên/agent đọc trước khi sửa application hoặc AI integration. Nếu team đổi quyết định, phải cập nhật đồng thời mục này, `docs/SOLUTION_SCOPE.md`, contract, examples, validators và tests liên quan.
+
+#### Product boundary
+
+- Working name: `PathMemory`.
+- Competition scope: Stage 4 — workplace onboarding cho blind/low-vision new employee.
+- Primary client: Expo mobile dành cho nhân viên khiếm thị.
+- Secondary client: React web dành cho human buddy/admin.
+- Một demo graph có thể chứa nhiều landmark và nhánh; không hard-code giới hạn ba hoặc bốn landmark.
+- MVP hiện tại dùng một bounded indoor workplace graph. Grouping theo building/floor có thể được thêm sau nhưng chưa phải field bắt buộc của contract hiện tại.
+
+#### Day 1 — collect nodes, then review the graph
+
+```text
+Employee walks through the workplace with a human buddy
+→ chest-mounted mobile camera sends one-to-three ephemeral frames per observation
+→ FastAPI/model returns structured landmark perception only
+→ employee saves useful candidates as AI_DRAFT nodes through Express
+→ PostgreSQL stores the draft nodes immediately
+→ mobile shows the Route ID
+→ buddy opens that same Route ID on the web
+→ buddy reviews/verifies landmark names and stable evidence
+→ buddy creates each directed edge by selecting:
+   from landmark + to landmark + relative maneuver
+→ Express validates and stores the graph
+→ buddy publishes it for later journeys
+```
+
+Ngày đầu ưu tiên tạo đủ node ổn định và giúp buddy hiểu mạng landmark. Mobile không yêu cầu buddy nhập hướng ngay trong lúc đi. Việc nhiều node được ghi nhận không tự chứng minh connectivity: `captureOrder`/`displayOrder` chỉ sắp xếp danh sách, không tự tạo edge hoặc path.
+
+Buddy chọn hướng trên web bằng structured value:
+
+```text
+GO_STRAIGHT
+TURN_LEFT
+TURN_RIGHT
+TAKE_ELEVATOR
+ENTER_DOOR
+OTHER
+```
+
+Mỗi edge có hướng. `A → B` và `B → A` là hai record riêng và có thể có maneuver khác nhau. Buddy không viết hoặc sửa prose cho câu đọc. `spokenCue` không còn là field của Product API hoặc cột database; Express sinh narration EN/VI deterministic từ source landmark, maneuver và target landmark.
+
+#### Day 2 onward — deterministic route replay
+
+```text
+Employee opens a published graph with a screen reader
+→ selects an origin landmark
+→ Express lists only reachable destinations
+→ employee selects a destination
+→ Express runs deterministic unweighted BFS (FEWEST_EDGES)
+→ camera must confirm the selected origin
+→ Express returns the generated movement narration for the first edge
+→ each later camera observation is matched only to the next expected landmark
+→ a match advances one planned edge and returns the next generated narration
+→ insufficient/conflicting evidence returns STOP_AND_RESCAN without advancing
+→ matching the destination completes the journey
+```
+
+BFS là path algorithm của MVP. Không dùng DFS để claim shortest path. Khi hai path có cùng số edge, tie-break bằng edge `displayOrder`, sau đó edge ID. Đây là fewest-edge path, không phải shortest physical distance, easiest route hoặc safest route.
+
+#### AI and deterministic responsibility
+
+- Gemini/FastAPI: frame quality, visible text, scene interpretation và structured landmark candidates.
+- Express: IDs, validation, persistence, deduplication, review/publish state, graph validation, reachability, BFS, expected-landmark matching, session transition và EN/VI narration.
+- Mobile/web: accessible capture/review/selection/replay UI; client không gọi FastAPI hoặc Gemini trực tiếp.
+- PostgreSQL: structured graphs, landmarks, directed edges, sessions, observations/review metadata; không lưu raw image/video và không lưu authored spoken cue.
+- AI không đọc graph để chọn route, không quyết định left/right/straight, không quyết định advance và không tạo safety claim.
+
+#### Explicitly deferred
+
+- Tạm thời không giải quyết canonical facing direction hoặc `orientationCue` tại node xuất phát.
+- Không dùng heading degrees, gyroscope, compass, GPS, sensor fusion hoặc agent inference để tự tạo maneuver.
+- Không dùng camera/VLM để tự suy ra edge connectivity từ một tập node độc lập.
+- Chưa thêm floor/building schema, weighted routing hoặc Dijkstra trước khi golden path hiện tại ổn định.
+- Các giới hạn cũ vẫn giữ: không QR/AprilTag, SLAM/ARKit/ARCore, BLE/UWB, obstacle avoidance hoặc general-purpose indoor navigation.
+
+#### Current contracts
+
+- Product contract: `contracts/product-api.openapi.yaml` version `3.0.0`, hiện giữ prototype route namespace `/api/v2`.
+- Product API 3.0 removes authored/stored `spokenCue`; consumers send and receive structured `maneuver` values.
+- AI contract: `contracts/ai-service.openapi.yaml` version `1.1.0`, không đổi bởi quyết định graph/narration này.
+- Hồng Phúc có thể pull branch/commit mới và tiếp tục FastAPI/model bằng AI-service v1.1; không cần implement PostgreSQL, graph, BFS hoặc narration.
+
 ## 4. Vai trò mặc định
 
 ### Bảo Anh — Software/Product Owner

@@ -10,27 +10,18 @@ import {
   relativeManeuvers,
   type WorkplaceGraph,
 } from "./api";
+import {
+  type Language,
+  landmarkTypeLabels,
+  maneuverLabels,
+  statusLabels,
+  type WebCopy,
+  webCopy,
+} from "./i18n";
 
 const defaultRouteId =
   (import.meta.env.VITE_DEMO_ROUTE_ID as string | undefined) ??
   "7fbd42a3-356f-4ad7-b3f5-68b79a1154b7";
-
-const statusLabels = {
-  DRAFT: "Bản nháp — cần buddy duyệt",
-  PUBLISHED: "Đã xuất bản — sẵn sàng cho mobile",
-  OUTDATED: "Hết hiệu lực — không cho tạo hành trình mới",
-  AI_DRAFT: "AI đề xuất — chưa xác minh",
-  BUDDY_VERIFIED: "Buddy đã xác minh",
-} as const;
-
-const maneuverLabels: Record<RelativeManeuver, string> = {
-  GO_STRAIGHT: "Đi thẳng",
-  TURN_LEFT: "Rẽ trái",
-  TURN_RIGHT: "Rẽ phải",
-  TAKE_ELEVATOR: "Đi thang máy",
-  ENTER_DOOR: "Đi qua cửa",
-  OTHER: "Hướng dẫn khác",
-};
 
 interface EdgeDraft {
   readonly key: string;
@@ -38,23 +29,48 @@ interface EdgeDraft {
   readonly fromLandmarkId: string;
   readonly toLandmarkId: string;
   readonly maneuver: RelativeManeuver;
-  readonly spokenCue: string;
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: unknown, language: Language, copy: WebCopy): string {
   if (error instanceof ProductApiError) {
     const details = error.details.map((item) => `${item.field}: ${item.issue}`).join("; ");
-    return `${error.message}${details ? ` ${details}` : ""}`;
+    const message = language === "en" ? copy.couldNotComplete : error.message;
+    return `${message}${details ? ` ${details}` : ""}`;
   }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Đã xảy ra lỗi không xác định.";
+  if (error instanceof Error) return error.message;
+  return copy.unknownError;
 }
 
-function StatusBadge({ status }: { status: keyof typeof statusLabels }) {
+function PathMemoryMark() {
   return (
-    <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabels[status]}</span>
+    <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+      <path
+        d="M18 64 C35 64 34 30 49 30 C64 30 62 64 78 64"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="8"
+        strokeLinecap="round"
+      />
+      <circle cx="18" cy="64" r="9" className="logo-node logo-node-start" />
+      <circle cx="49" cy="30" r="9" className="logo-node logo-node-middle" />
+      <circle cx="78" cy="64" r="11" className="logo-node logo-node-end" />
+      <path
+        d="M73 64l4 4 8-10"
+        fill="none"
+        stroke="white"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function StatusBadge({ status, language }: { status: string; language: Language }) {
+  return (
+    <span className={`status-badge status-${status.toLowerCase()}`}>
+      {statusLabels[language][status] ?? status}
+    </span>
   );
 }
 
@@ -62,23 +78,39 @@ function LandmarkForm({
   graph,
   landmark,
   busy,
+  defaultExpanded,
+  language,
+  copy,
   onSaved,
   onError,
 }: {
   graph: WorkplaceGraph;
   landmark: Landmark;
   busy: boolean;
+  defaultExpanded: boolean;
+  language: Language;
+  copy: WebCopy;
   onSaved: (graph: WorkplaceGraph, message: string) => void;
   onError: (message: string) => void;
 }) {
   const descriptionId = useId();
+  const contentId = useId();
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const disabled = busy || saving;
+
+  useEffect(() => {
+    if (!saved) return;
+    const timer = window.setTimeout(() => setSaved(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     setSaving(true);
+    setSaved(false);
     try {
       await productApi.reviewLandmark(graph.id, landmark.id, {
         name: String(data.get("name") ?? ""),
@@ -88,104 +120,289 @@ function LandmarkForm({
         reviewStatus: String(data.get("reviewStatus")) as "AI_DRAFT" | "BUDDY_VERIFIED",
       });
       const refreshed = await productApi.getRoute(graph.id);
-      onSaved(refreshed, `Đã lưu landmark ${landmark.name}.`);
+      setSaved(true);
+      onSaved(refreshed, copy.savedLandmark(landmark.name));
     } catch (caught) {
-      onError(errorMessage(caught));
+      onError(errorMessage(caught, language, copy));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <form className="landmark-card" onSubmit={submit} aria-labelledby={`landmark-${landmark.id}`}>
-      <div className="card-heading-row">
+    <article className={`landmark-card${saved ? " is-saved" : ""}`}>
+      <div className="landmark-head">
         <div>
-          <p className="item-index">Landmark {landmark.displayOrder + 1}</p>
+          <p className="landmark-kicker">{copy.landmarkNumber(landmark.displayOrder + 1)}</p>
           <h3 id={`landmark-${landmark.id}`}>{landmark.name}</h3>
         </div>
-        <StatusBadge status={landmark.status} />
+        <div className="landmark-head-actions">
+          <StatusBadge language={language} status={landmark.status} />
+          <button
+            className="disclosure-button"
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={contentId}
+            onClick={() => setExpanded((current) => !current)}
+          >
+            {expanded ? copy.collapse : copy.openToReview}
+            <span className="chevron" aria-hidden="true">
+              {expanded ? "−" : "+"}
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div className="form-grid">
-        <label>
-          Tên landmark
-          <input
-            name="name"
-            defaultValue={landmark.name}
-            required
-            maxLength={100}
-            disabled={disabled}
-          />
-        </label>
-        <label>
-          Loại landmark
-          <select name="type" defaultValue={landmark.type} disabled={disabled}>
-            {landmarkTypes.map((type) => (
-              <option key={type} value={type}>
-                {type.replaceAll("_", " ")}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Thứ tự trong danh sách
-          <input
-            name="displayOrder"
-            type="number"
-            min={0}
-            defaultValue={landmark.displayOrder}
-            disabled={disabled}
-          />
-          <span className="field-hint">
-            Chỉ sắp xếp danh sách; không phải tọa độ hay thứ tự tuyến.
+      {expanded ? (
+        <form
+          id={contentId}
+          className="landmark-content disclosure-content"
+          onSubmit={submit}
+          aria-labelledby={`landmark-${landmark.id}`}
+        >
+          <div className="ai-box">
+            <div className="ai-label">
+              <span>{copy.cameraObservation}</span>
+              <span>{copy.needsReview}</span>
+            </div>
+            <dl className="ai-grid">
+              <div>
+                <dt>{copy.visibleText}</dt>
+                <dd>{landmark.visibleText.join(", ") || copy.none}</dd>
+              </div>
+              <div>
+                <dt>{copy.stableFeatures}</dt>
+                <dd>{landmark.stableFeatures.join(", ") || copy.none}</dd>
+              </div>
+              <div className="ai-description">
+                <dt>{copy.capturedDescription}</dt>
+                <dd>{landmark.description || copy.noDescription}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <p className="human-label">{copy.buddyDetails}</p>
+          <div className="form-grid">
+            <label>
+              {copy.landmarkName}
+              <input
+                name="name"
+                defaultValue={landmark.name}
+                required
+                maxLength={100}
+                disabled={disabled}
+              />
+            </label>
+            <label>
+              {copy.landmarkType}
+              <select name="type" defaultValue={landmark.type} disabled={disabled}>
+                {landmarkTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {landmarkTypeLabels[language][type]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field-full" htmlFor={descriptionId}>
+              {copy.recognizableDescription}
+              <textarea
+                id={descriptionId}
+                name="description"
+                defaultValue={landmark.description}
+                maxLength={300}
+                rows={3}
+                disabled={disabled}
+              />
+            </label>
+            <label>
+              {copy.displayOrder}
+              <input
+                name="displayOrder"
+                type="number"
+                min={0}
+                defaultValue={landmark.displayOrder}
+                disabled={disabled}
+              />
+              <span className="field-hint">{copy.displayOrderHint}</span>
+            </label>
+            <label>
+              {copy.reviewStatus}
+              <select name="reviewStatus" defaultValue={landmark.status} disabled={disabled}>
+                <option value="AI_DRAFT">{copy.draftOption}</option>
+                <option value="BUDDY_VERIFIED">{copy.verifiedOption}</option>
+                <option value="PUBLISHED" disabled>
+                  {copy.publishedOption}
+                </option>
+                <option value="OUTDATED" disabled>
+                  {copy.outdatedOption}
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <div className="card-footer">
+            <span className={`save-state${landmark.status === "AI_DRAFT" ? " pending" : ""}`}>
+              {saved
+                ? copy.savedChanges
+                : landmark.status === "AI_DRAFT"
+                  ? copy.awaitingReview
+                  : copy.reviewed}
+            </span>
+            <button className="button button-secondary" type="submit" disabled={disabled}>
+              {saving ? copy.saving : copy.saveReview}
+            </button>
+          </div>
+        </form>
+      ) : null}
+    </article>
+  );
+}
+
+function EdgeEditor({
+  edge,
+  index,
+  graph,
+  busy,
+  language,
+  copy,
+  onUpdate,
+  onRemove,
+  onSpeak,
+}: {
+  edge: EdgeDraft;
+  index: number;
+  graph: WorkplaceGraph;
+  busy: boolean;
+  language: Language;
+  copy: WebCopy;
+  onUpdate: (key: string, patch: Partial<EdgeDraft>) => void;
+  onRemove: (key: string) => void;
+  onSpeak: (cue: string) => void;
+}) {
+  const contentId = useId();
+  const [expanded, setExpanded] = useState(index === 0);
+  const from =
+    graph.landmarks.find((item) => item.id === edge.fromLandmarkId)?.name ?? copy.notSelected;
+  const to =
+    graph.landmarks.find((item) => item.id === edge.toLandmarkId)?.name ?? copy.notSelected;
+  const generatedCue = copy.movementCue(edge.maneuver, from, to);
+
+  return (
+    <article className="edge-card">
+      <div className="edge-head">
+        <div>
+          <p className="edge-kicker">{copy.directionNumber(index + 1)}</p>
+          <h3>
+            {from} <span aria-hidden="true">→</span> {to}
+          </h3>
+          <span className="direction-badge">{maneuverLabels[language][edge.maneuver]}</span>
+        </div>
+        <button
+          className="disclosure-button"
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={contentId}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? copy.collapse : copy.edit}
+          <span className="chevron" aria-hidden="true">
+            {expanded ? "−" : "+"}
           </span>
-        </label>
-        <label>
-          Trạng thái duyệt
-          <select name="reviewStatus" defaultValue={landmark.status} disabled={disabled}>
-            <option value="AI_DRAFT">AI đề xuất — chưa xác minh</option>
-            <option value="BUDDY_VERIFIED">Buddy đã xác minh tại chỗ</option>
-            <option value="PUBLISHED" disabled>
-              Đã xuất bản
-            </option>
-            <option value="OUTDATED" disabled>
-              Hết hiệu lực
-            </option>
-          </select>
-        </label>
+        </button>
       </div>
 
-      <label htmlFor={descriptionId}>
-        Mô tả dễ nhận biết
-        <textarea
-          id={descriptionId}
-          name="description"
-          defaultValue={landmark.description}
-          maxLength={300}
-          rows={3}
-          disabled={disabled}
-        />
-      </label>
-
-      <dl className="evidence-list">
-        <div>
-          <dt>Chữ nhìn thấy</dt>
-          <dd>{landmark.visibleText.join(", ") || "Không có"}</dd>
+      {expanded ? (
+        <div id={contentId} className="edge-content disclosure-content">
+          <fieldset disabled={busy || graph.status !== "DRAFT"}>
+            <legend className="sr-only">{copy.editDirection(index + 1)}</legend>
+            <div className="edge-grid">
+              <label>
+                {copy.fromLandmark}
+                <select
+                  value={edge.fromLandmarkId}
+                  onChange={(event) => onUpdate(edge.key, { fromLandmarkId: event.target.value })}
+                >
+                  {graph.landmarks.map((landmark) => (
+                    <option key={landmark.id} value={landmark.id}>
+                      {landmark.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {copy.toLandmark}
+                <select
+                  value={edge.toLandmarkId}
+                  onChange={(event) => onUpdate(edge.key, { toLandmarkId: event.target.value })}
+                >
+                  {graph.landmarks.map((landmark) => (
+                    <option key={landmark.id} value={landmark.id}>
+                      {landmark.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {copy.relativeDirection}
+                <select
+                  value={edge.maneuver}
+                  onChange={(event) =>
+                    onUpdate(edge.key, { maneuver: event.target.value as RelativeManeuver })
+                  }
+                >
+                  {relativeManeuvers.map((maneuver) => (
+                    <option key={maneuver} value={maneuver}>
+                      {maneuverLabels[language][maneuver]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {copy.priorityOrder}
+                <input
+                  type="number"
+                  min={0}
+                  value={edge.displayOrder}
+                  onChange={(event) =>
+                    onUpdate(edge.key, { displayOrder: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <div className="edge-instruction generated-instruction">
+                <span className="generated-instruction-label">{copy.spokenInstruction}</span>
+                <p>{generatedCue}</p>
+                <small>{copy.generatedInstructionHelp}</small>
+              </div>
+            </div>
+          </fieldset>
+          <div className="button-row edge-actions">
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => onSpeak(generatedCue)}
+            >
+              {copy.replayInstruction}
+            </button>
+            <button
+              className="button button-danger-quiet"
+              type="button"
+              disabled={busy || graph.status !== "DRAFT"}
+              onClick={() => onRemove(edge.key)}
+            >
+              {copy.deleteDirection}
+            </button>
+          </div>
         </div>
-        <div>
-          <dt>Dấu hiệu ổn định</dt>
-          <dd>{landmark.stableFeatures.join(", ") || "Không có"}</dd>
-        </div>
-      </dl>
-
-      <button className="button button-secondary" type="submit" disabled={disabled}>
-        {saving ? "Đang lưu…" : "Lưu xác minh landmark"}
-      </button>
-    </form>
+      ) : null}
+    </article>
   );
 }
 
 export function App() {
+  const [language, setLanguage] = useState<Language>(() =>
+    window.localStorage.getItem("pathmemory-language") === "vi" ? "vi" : "en",
+  );
+  const copy = webCopy[language];
   const [initialRouteId] = useState(
     () => new URLSearchParams(window.location.search).get("routeId") ?? defaultRouteId,
   );
@@ -193,8 +410,13 @@ export function App() {
   const [graph, setGraph] = useState<WorkplaceGraph | null>(null);
   const [edgeDrafts, setEdgeDrafts] = useState<EdgeDraft[]>([]);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("Sẵn sàng tải graph.");
+  const [notice, setNotice] = useState(copy.ready);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    window.localStorage.setItem("pathmemory-language", language);
+  }, [language]);
 
   const applyGraph = useCallback((next: WorkplaceGraph, message: string) => {
     setGraph(next);
@@ -206,7 +428,6 @@ export function App() {
         fromLandmarkId: edge.fromLandmarkId,
         toLandmarkId: edge.toLandmarkId,
         maneuver: edge.maneuver,
-        spokenCue: edge.spokenCue,
       })),
     );
     window.history.replaceState(null, "", `?routeId=${encodeURIComponent(next.id)}`);
@@ -218,20 +439,20 @@ export function App() {
     async (requestedId: string) => {
       setBusy(true);
       setError("");
-      setNotice("Đang tải graph…");
+      setNotice(copy.loadingMap);
       try {
         const loaded = await productApi.getRoute(requestedId.trim());
-        applyGraph(loaded, `Đã tải ${loaded.name}.`);
+        applyGraph(loaded, copy.loadedMap(loaded.name));
       } catch (caught) {
         setGraph(null);
         setEdgeDrafts([]);
-        setError(errorMessage(caught));
+        setError(errorMessage(caught, language, copy));
         setNotice("");
       } finally {
         setBusy(false);
       }
     },
-    [applyGraph],
+    [applyGraph, copy, language],
   );
 
   useEffect(() => {
@@ -245,7 +466,7 @@ export function App() {
     try {
       await action();
     } catch (caught) {
-      setError(errorMessage(caught));
+      setError(errorMessage(caught, language, copy));
       setNotice("");
     } finally {
       setBusy(false);
@@ -260,7 +481,7 @@ export function App() {
 
   function addEdge() {
     if (!graph || graph.landmarks.length < 2) {
-      setError("Cần ít nhất hai landmark trước khi tạo hướng đi.");
+      setError(copy.minimumTwoError);
       return;
     }
     const [from, to] = graph.landmarks;
@@ -273,403 +494,456 @@ export function App() {
         fromLandmarkId: from.id,
         toLandmarkId: to.id,
         maneuver: "GO_STRAIGHT",
-        spokenCue: `Từ ${from.name}, đi thẳng và tìm ${to.name}.`,
       },
     ]);
     setError("");
-    setNotice("Đã thêm một hướng đi nháp. Hãy kiểm tra hai đầu landmark và câu đọc.");
+    setNotice(copy.directionAdded);
   }
 
   function speakCue(cue: string) {
     if (!("speechSynthesis" in window)) {
-      setError("Trình duyệt này không hỗ trợ phát lại giọng nói.");
+      setError(copy.speechUnsupported);
       return;
     }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cue);
-    utterance.lang = "vi-VN";
+    utterance.lang = language === "en" ? "en-US" : "vi-VN";
     window.speechSynthesis.speak(utterance);
-    setNotice("Đang phát lại câu chỉ dẫn.");
+    setNotice(copy.replaying);
   }
 
+  const verifiedLandmarks =
+    graph?.landmarks.filter(
+      (item) => item.status === "BUDDY_VERIFIED" || item.status === "PUBLISHED",
+    ).length ?? 0;
+  const unverifiedLandmarks = graph ? graph.landmarks.length - verifiedLandmarks : 0;
+  const hasMinimumLandmarks = (graph?.landmarks.length ?? 0) >= 2;
+  const allLandmarksVerified = Boolean(graph?.landmarks.length) && unverifiedLandmarks === 0;
+  const hasSavedEdges = (graph?.edges.length ?? 0) > 0;
   const canPublish =
-    graph?.status === "DRAFT" &&
-    graph.landmarks.length >= 2 &&
-    graph.landmarks.every((landmark) => landmark.status === "BUDDY_VERIFIED") &&
-    graph.edges.length > 0;
+    graph?.status === "DRAFT" && hasMinimumLandmarks && allLandmarksVerified && hasSavedEdges;
+  const connectionLabel = busy
+    ? copy.connecting
+    : error
+      ? copy.connectionProblem
+      : graph
+        ? copy.connected
+        : copy.noMapLoaded;
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        {copy.skip}
+      </a>
+
       <header className="topbar">
-        <a className="brand" href="#main-content" aria-label="PathMemory Admin — về nội dung chính">
-          <span className="brand-mark" aria-hidden="true">
-            <span className="brand-path brand-path-vertical" />
-            <span className="brand-path brand-path-horizontal" />
-            <span className="brand-node brand-node-start" />
-            <span className="brand-node brand-node-middle" />
-            <span className="brand-node brand-node-end" />
-          </span>
-          <span>
-            <strong>PathMemory</strong>
-            <small>Admin review</small>
-          </span>
-        </a>
-        <p className="tagline">Verified landmarks. Familiar journeys.</p>
+        <div className="topbar-inner">
+          <a className="brand" href="#main-content" aria-label={copy.brandAria}>
+            <PathMemoryMark />
+            <span className="brand-copy">
+              <strong>PathMemory</strong>
+              <small>Verified landmarks. Familiar journeys.</small>
+            </span>
+          </a>
+          <div className="topbar-actions">
+            <fieldset className="language-switch">
+              <legend className="sr-only">{copy.language}</legend>
+              <button
+                aria-pressed={language === "en"}
+                className={language === "en" ? "is-active" : ""}
+                onClick={() => setLanguage("en")}
+                type="button"
+              >
+                EN<span className="sr-only"> — {copy.english}</span>
+              </button>
+              <button
+                aria-pressed={language === "vi"}
+                className={language === "vi" ? "is-active" : ""}
+                onClick={() => setLanguage("vi")}
+                type="button"
+              >
+                VI<span className="sr-only"> — {copy.vietnamese}</span>
+              </button>
+            </fieldset>
+            <div
+              className={`connection${error ? " connection-error" : ""}`}
+              role="status"
+              aria-live="polite"
+            >
+              <span className="connection-dot" aria-hidden="true" />
+              {connectionLabel}
+            </div>
+          </div>
+        </div>
       </header>
 
       <main id="main-content" className="page-shell">
         <section className="hero" aria-labelledby="page-title">
-          <p className="eyebrow">Stage 4 · Workplace onboarding</p>
-          <h1 id="page-title">Duyệt bản đồ landmark tương đối</h1>
-          <p>
-            Mobile tạo bản nháp trong chuyến đi cùng buddy. Tại đây, buddy xác minh landmark, thiết
-            lập từng hướng đi và xuất bản trước khi nhân viên sử dụng lại. PathMemory không lưu tọa
-            độ và không phát hiện vật cản.
-          </p>
+          <div>
+            <p className="eyebrow">{copy.stage}</p>
+            <h1 id="page-title">{copy.title}</h1>
+            <p className="lede">{copy.lede}</p>
+          </div>
+          <aside className="workflow-card" aria-label={copy.workflowAria}>
+            <h2>{copy.workflowTitle}</h2>
+            <ol>
+              {copy.workflowSteps.map((step, index) => (
+                <li key={step}>
+                  <span>{index + 1}</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </aside>
         </section>
 
-        <div className="announcement" aria-live="polite" aria-atomic="true">
-          {notice}
-        </div>
-        {error ? (
-          <div className="error-banner" role="alert">
-            <strong>Không thể hoàn tất.</strong> {error}
+        <section className="panel" aria-labelledby="route-loader-title">
+          <div className="panel-header">
+            <h2 id="route-loader-title">{copy.openRouteTitle}</h2>
+            <p id="route-id-help">{copy.openRouteHelp}</p>
           </div>
-        ) : null}
-
-        <section className="panel route-loader" aria-labelledby="route-loader-title">
-          <div>
-            <p className="section-kicker">Graph workspace</p>
-            <h2 id="route-loader-title">Mở bản nháp từ mobile</h2>
-            <p className="route-workflow-note" id="route-id-help">
-              Mobile Learn tạo graph và hiển thị Route ID. Dán mã đó để buddy xem cùng dữ liệu đã
-              lưu trong Express/PostgreSQL.
-            </p>
+          <div className="panel-body">
+            <form
+              className="route-id-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void loadGraph(routeId);
+              }}
+            >
+              <label>
+                {copy.routeIdLabel}
+                <input
+                  value={routeId}
+                  onChange={(event) => setRouteId(event.target.value)}
+                  aria-describedby="route-id-help"
+                  required
+                />
+              </label>
+              <button
+                className="button button-primary"
+                type="submit"
+                disabled={busy}
+                aria-busy={busy}
+              >
+                {busy ? copy.opening : copy.openMap}
+              </button>
+            </form>
+            <div className="live-message" aria-live="polite" aria-atomic="true">
+              {notice}
+            </div>
+            {error ? (
+              <div className="error-banner" role="alert">
+                <strong>{copy.couldNotComplete}</strong> {error}
+              </div>
+            ) : null}
           </div>
-          <form
-            className="route-id-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void loadGraph(routeId);
-            }}
-          >
-            <label>
-              Route ID từ mobile Learn
-              <input
-                value={routeId}
-                onChange={(event) => setRouteId(event.target.value)}
-                aria-describedby="route-id-help"
-                required
-              />
-            </label>
-            <button className="button button-primary" type="submit" disabled={busy}>
-              Mở graph
-            </button>
-          </form>
         </section>
 
         {graph ? (
           <>
-            <section className="summary-grid" aria-label="Tổng quan graph">
-              <article className="summary-card summary-primary">
-                <span>Graph</span>
-                <strong>{graph.name}</strong>
-                <code>{graph.id}</code>
-              </article>
-              <article className="summary-card">
-                <span>Trạng thái</span>
-                <StatusBadge status={graph.status} />
-              </article>
-              <article className="summary-card">
-                <span>Landmark</span>
-                <strong>{graph.landmarks.length}</strong>
-                <small>
-                  {
-                    graph.landmarks.filter(
-                      (item) => item.status === "BUDDY_VERIFIED" || item.status === "PUBLISHED",
-                    ).length
-                  }{" "}
-                  đã duyệt
-                </small>
-              </article>
-              <article className="summary-card">
-                <span>Hướng đi có chiều</span>
-                <strong>{graph.edges.length}</strong>
-                <small>Không tự suy ra chiều ngược lại</small>
-              </article>
+            <section className="panel summary-panel" aria-labelledby="summary-title">
+              <div className="panel-header">
+                <h2 id="summary-title">{copy.summaryTitle}</h2>
+                <p>{copy.summaryHelp}</p>
+              </div>
+              <div className="panel-body summary-grid">
+                <article className="summary-item summary-name">
+                  <span>{copy.workplaceMap}</span>
+                  <strong>{graph.name}</strong>
+                  <StatusBadge language={language} status={graph.status} />
+                </article>
+                <article className="summary-item">
+                  <span>Route ID</span>
+                  <code>{graph.id}</code>
+                </article>
+                <article className="summary-item">
+                  <span>{copy.landmarks}</span>
+                  <strong>{graph.landmarks.length}</strong>
+                  <small>{copy.reviewedCount(verifiedLandmarks)}</small>
+                </article>
+                <article className="summary-item">
+                  <span>{copy.directions}</span>
+                  <strong>{graph.edges.length}</strong>
+                  <small>{copy.directionCountHelp}</small>
+                </article>
+              </div>
             </section>
 
-            <section className="content-section" aria-labelledby="landmarks-title">
-              <div className="section-heading">
-                <div>
-                  <p className="section-kicker">Bước 1</p>
-                  <h2 id="landmarks-title">Xác minh landmark</h2>
-                </div>
-                <div className="section-heading-support">
-                  <p>
-                    Kiểm tra tên, dấu hiệu ổn định và thứ tự hiển thị. AI chỉ tạo bản nháp; buddy
-                    chịu trách nhiệm xác minh.
-                  </p>
-                  <button
-                    className="button button-quiet"
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void loadGraph(graph.id)}
-                  >
-                    Làm mới landmark từ mobile
-                  </button>
-                </div>
-              </div>
-              {graph.landmarks.length === 0 ? (
-                <div className="empty-state">
-                  <h3>Chưa có landmark</h3>
-                  <p>
-                    Tiếp tục đúng phiên Learn trên mobile, lưu candidate, rồi nhấn “Làm mới landmark
-                    từ mobile”.
-                  </p>
-                </div>
-              ) : (
-                <div className="card-list">
-                  {graph.landmarks.map((landmark) => (
-                    <LandmarkForm
-                      key={landmark.id}
-                      graph={graph}
-                      landmark={landmark}
-                      busy={busy || graph.status !== "DRAFT"}
-                      onSaved={applyGraph}
-                      onError={(message) => {
-                        setError(message);
-                        setNotice("");
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
+            <nav className="step-navigation" aria-label={copy.reviewNavigation}>
+              <a href="#landmarks-section">
+                <span className="step-nav-number">1</span>
+                {copy.reviewLandmarks}
+              </a>
+              <a href="#edges-section">
+                <span className="step-nav-number">2</span>
+                {copy.setDirections}
+              </a>
+              <a href="#publish-section">
+                <span className="step-nav-number">3</span>
+                {copy.reviewAndPublish}
+              </a>
+            </nav>
 
-            <section className="content-section" aria-labelledby="edges-title">
-              <div className="section-heading">
-                <div>
-                  <p className="section-kicker">Bước 2</p>
-                  <h2 id="edges-title">Thiết lập hướng đi tương đối</h2>
+            <section
+              id="landmarks-section"
+              className="panel workflow-section"
+              aria-labelledby="landmarks-title"
+            >
+              <div className="panel-header section-step">
+                <span className="step-number" aria-hidden="true">
+                  1
+                </span>
+                <div className="section-title-wrap">
+                  <h2 id="landmarks-title">{copy.reviewLandmarks}</h2>
+                  <p>{copy.reviewLandmarksHelp}</p>
                 </div>
-                <p>
-                  Mỗi dòng là một cạnh có hướng được buddy xác nhận. Muốn đi chiều ngược lại phải
-                  tạo thêm một dòng; thay đổi chỉ vào database khi nhấn “Lưu tất cả hướng đi”.
-                </p>
-              </div>
-              <div className="edge-list">
-                {edgeDrafts.map((edge, index) => (
-                  <fieldset
-                    className="edge-card"
-                    key={edge.key}
-                    disabled={busy || graph.status !== "DRAFT"}
-                  >
-                    <legend>Hướng đi {index + 1}</legend>
-                    <div className="form-grid edge-fields">
-                      <label>
-                        Từ landmark
-                        <select
-                          value={edge.fromLandmarkId}
-                          onChange={(event) =>
-                            updateEdge(edge.key, { fromLandmarkId: event.target.value })
-                          }
-                        >
-                          {graph.landmarks.map((landmark) => (
-                            <option key={landmark.id} value={landmark.id}>
-                              {landmark.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Đến landmark
-                        <select
-                          value={edge.toLandmarkId}
-                          onChange={(event) =>
-                            updateEdge(edge.key, { toLandmarkId: event.target.value })
-                          }
-                        >
-                          {graph.landmarks.map((landmark) => (
-                            <option key={landmark.id} value={landmark.id}>
-                              {landmark.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Hướng tương đối
-                        <select
-                          value={edge.maneuver}
-                          onChange={(event) =>
-                            updateEdge(edge.key, {
-                              maneuver: event.target.value as RelativeManeuver,
-                            })
-                          }
-                        >
-                          {relativeManeuvers.map((maneuver) => (
-                            <option key={maneuver} value={maneuver}>
-                              {maneuverLabels[maneuver]}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Thứ tự ưu tiên cạnh
-                        <input
-                          type="number"
-                          min={0}
-                          value={edge.displayOrder}
-                          onChange={(event) =>
-                            updateEdge(edge.key, { displayOrder: Number(event.target.value) })
-                          }
-                        />
-                      </label>
-                    </div>
-                    <label>
-                      Câu chỉ dẫn sẽ được đọc trên mobile
-                      <textarea
-                        value={edge.spokenCue}
-                        onChange={(event) =>
-                          updateEdge(edge.key, { spokenCue: event.target.value })
-                        }
-                        required
-                        maxLength={300}
-                        rows={3}
-                      />
-                    </label>
-                    <div className="button-row">
-                      <button
-                        className="button button-quiet"
-                        type="button"
-                        onClick={() => speakCue(edge.spokenCue)}
-                      >
-                        Phát lại câu đọc
-                      </button>
-                      <button
-                        className="button button-danger-quiet"
-                        type="button"
-                        onClick={() =>
-                          setEdgeDrafts((current) =>
-                            current.filter((item) => item.key !== edge.key),
-                          )
-                        }
-                      >
-                        Xóa hướng đi
-                      </button>
-                    </div>
-                  </fieldset>
-                ))}
-              </div>
-              <div className="button-row sticky-actions">
                 <button
                   className="button button-secondary"
                   type="button"
-                  onClick={addEdge}
-                  disabled={busy || graph.status !== "DRAFT"}
+                  disabled={busy}
+                  onClick={() => void loadGraph(graph.id)}
                 >
-                  Thêm hướng đi
+                  {copy.refreshFromMobile}
                 </button>
-                <button
-                  className="button button-primary"
-                  type="button"
-                  disabled={busy || graph.status !== "DRAFT" || edgeDrafts.length === 0}
-                  onClick={() =>
-                    void runAction(async () => {
-                      const saved = await productApi.replaceEdges(
-                        graph.id,
-                        edgeDrafts.map(
-                          ({
-                            displayOrder,
-                            fromLandmarkId,
-                            toLandmarkId,
-                            maneuver,
-                            spokenCue,
-                          }) => ({
-                            displayOrder,
-                            fromLandmarkId,
-                            toLandmarkId,
-                            maneuver,
-                            spokenCue,
-                          }),
-                        ),
-                      );
-                      applyGraph(saved, "Đã lưu toàn bộ hướng đi có chiều.");
-                    }, "Đang kiểm tra và lưu hướng đi…")
-                  }
-                >
-                  Lưu tất cả hướng đi
-                </button>
+              </div>
+              <div className="panel-body">
+                {unverifiedLandmarks > 0 ? (
+                  <div className="callout callout-warning" role="status">
+                    <span className="callout-icon" aria-hidden="true">
+                      !
+                    </span>
+                    <p>
+                      <strong>{copy.unverifiedWarning(unverifiedLandmarks)}</strong>{" "}
+                      {copy.finishBeforePublish}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="callout callout-success" role="status">
+                    <span className="callout-icon" aria-hidden="true">
+                      ✓
+                    </span>
+                    <p>
+                      <strong>{copy.allVerified}</strong> {copy.continueDirections}
+                    </p>
+                  </div>
+                )}
+
+                {graph.landmarks.length === 0 ? (
+                  <div className="empty-state">
+                    <h3>{copy.noLandmarks}</h3>
+                    <p>{copy.noLandmarksHelp}</p>
+                  </div>
+                ) : (
+                  <div className="landmark-grid">
+                    {graph.landmarks.map((landmark, index) => (
+                      <LandmarkForm
+                        key={landmark.id}
+                        graph={graph}
+                        landmark={landmark}
+                        busy={busy || graph.status !== "DRAFT"}
+                        copy={copy}
+                        defaultExpanded={landmark.status === "AI_DRAFT" || index === 0}
+                        language={language}
+                        onSaved={applyGraph}
+                        onError={(message) => {
+                          setError(message);
+                          setNotice("");
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </section>
 
-            <section className="publish-panel" aria-labelledby="publish-title">
-              <div>
-                <p className="section-kicker">Bước 3</p>
-                <h2 id="publish-title">Xuất bản cho mobile</h2>
-                <p>
-                  Chỉ xuất bản sau khi buddy đã kiểm tra mọi landmark và câu chỉ dẫn tại nơi làm
-                  việc. Mobile ngày sau chỉ cho chọn đường từ graph đã xuất bản.
-                </p>
+            <section
+              id="edges-section"
+              className="panel workflow-section"
+              aria-labelledby="edges-title"
+            >
+              <div className="panel-header section-step">
+                <span className="step-number" aria-hidden="true">
+                  2
+                </span>
+                <div className="section-title-wrap">
+                  <h2 id="edges-title">{copy.directionsTitle}</h2>
+                  <p>{copy.directionsHelp}</p>
+                </div>
               </div>
-              <div className="button-row">
-                {graph.status === "DRAFT" ? (
+              <div className="panel-body">
+                <div className="callout callout-info">
+                  <span className="callout-icon" aria-hidden="true">
+                    ↗
+                  </span>
+                  <p>{copy.displayOrderReview}</p>
+                </div>
+
+                {edgeDrafts.length > 0 ? (
+                  <div className="edge-list">
+                    {edgeDrafts.map((edge, index) => (
+                      <EdgeEditor
+                        key={edge.key}
+                        edge={edge}
+                        index={index}
+                        graph={graph}
+                        busy={busy}
+                        copy={copy}
+                        language={language}
+                        onUpdate={updateEdge}
+                        onRemove={(key) =>
+                          setEdgeDrafts((current) => current.filter((item) => item.key !== key))
+                        }
+                        onSpeak={speakCue}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state compact">
+                    <h3>{copy.noDirections}</h3>
+                    <p>{copy.noDirectionsHelp}</p>
+                  </div>
+                )}
+
+                <div className="button-row section-actions">
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={addEdge}
+                    disabled={busy || graph.status !== "DRAFT"}
+                  >
+                    {copy.addDirection}
+                  </button>
                   <button
                     className="button button-primary"
                     type="button"
-                    disabled={busy || !canPublish}
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          "Xác nhận mọi landmark và hướng đi đã được buddy kiểm tra tại chỗ?",
-                        )
-                      )
-                        return;
+                    disabled={busy || graph.status !== "DRAFT" || edgeDrafts.length === 0}
+                    onClick={() =>
                       void runAction(async () => {
-                        const published = await productApi.publishRoute(graph.id);
-                        applyGraph(published, "Graph đã xuất bản và sẵn sàng cho mobile.");
-                      }, "Đang xuất bản graph…");
-                    }}
+                        const saved = await productApi.replaceEdges(
+                          graph.id,
+                          edgeDrafts.map(
+                            ({ displayOrder, fromLandmarkId, toLandmarkId, maneuver }) => ({
+                              displayOrder,
+                              fromLandmarkId,
+                              toLandmarkId,
+                              maneuver,
+                            }),
+                          ),
+                        );
+                        applyGraph(saved, copy.directionsSaved);
+                      }, copy.savingDirections)
+                    }
                   >
-                    Xuất bản graph
+                    {busy ? copy.saving : copy.saveAllDirections}
                   </button>
-                ) : null}
-                {graph.status === "PUBLISHED" ? (
-                  <button
-                    className="button button-danger"
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          "Đánh dấu graph hết hiệu lực? Mobile sẽ không tạo hành trình mới.",
-                        )
-                      )
-                        return;
-                      void runAction(async () => {
-                        const outdated = await productApi.markOutdated(graph.id);
-                        applyGraph(outdated, "Graph đã được đánh dấu hết hiệu lực.");
-                      }, "Đang cập nhật trạng thái graph…");
-                    }}
-                  >
-                    Đánh dấu hết hiệu lực
-                  </button>
-                ) : null}
+                </div>
               </div>
-              {graph.status === "DRAFT" && !canPublish ? (
-                <p className="publish-requirements" role="status">
-                  Cần ít nhất hai landmark đã được buddy xác minh và một hướng đi đã lưu.
-                </p>
-              ) : null}
+            </section>
+
+            <section
+              id="publish-section"
+              className="panel workflow-section"
+              aria-labelledby="publish-title"
+            >
+              <div className="panel-header section-step">
+                <span className="step-number" aria-hidden="true">
+                  3
+                </span>
+                <div className="section-title-wrap">
+                  <h2 id="publish-title">{copy.publishTitle}</h2>
+                  <p>{copy.publishHelp}</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                <ul className="validation-list" aria-label={copy.publishRequirements}>
+                  <li className={hasMinimumLandmarks ? "validation-ok" : "validation-blocked"}>
+                    <span className="validation-icon" aria-hidden="true">
+                      {hasMinimumLandmarks ? "✓" : "!"}
+                    </span>
+                    <p>
+                      <strong>{copy.minimumLandmarks}:</strong>{" "}
+                      {copy.currentCount(graph.landmarks.length)}.
+                    </p>
+                  </li>
+                  <li className={allLandmarksVerified ? "validation-ok" : "validation-blocked"}>
+                    <span className="validation-icon" aria-hidden="true">
+                      {allLandmarksVerified ? "✓" : "!"}
+                    </span>
+                    <p>
+                      <strong>{copy.allLandmarksReviewed}:</strong>{" "}
+                      {copy.completedCount(verifiedLandmarks, graph.landmarks.length)}.
+                    </p>
+                  </li>
+                  <li className={hasSavedEdges ? "validation-ok" : "validation-blocked"}>
+                    <span className="validation-icon" aria-hidden="true">
+                      {hasSavedEdges ? "✓" : "!"}
+                    </span>
+                    <p>
+                      <strong>{copy.savedDirectionRequired}:</strong>{" "}
+                      {copy.savedCount(graph.edges.length)}.
+                    </p>
+                  </li>
+                </ul>
+
+                <div className="publish-box">
+                  <div>
+                    <strong>
+                      {graph.status === "PUBLISHED"
+                        ? copy.mapInUse
+                        : canPublish
+                          ? copy.publishReady
+                          : copy.publishBlocked}
+                    </strong>
+                    <p>
+                      {graph.status === "PUBLISHED"
+                        ? copy.markOutdatedHelp
+                        : canPublish
+                          ? copy.listenBeforePublish
+                          : copy.completeBlockedItems}
+                    </p>
+                  </div>
+                  <div className="button-row publish-actions">
+                    {graph.status === "DRAFT" ? (
+                      <button
+                        className="button button-primary"
+                        type="button"
+                        disabled={busy || !canPublish}
+                        onClick={() => {
+                          if (!window.confirm(copy.confirmPublish)) return;
+                          void runAction(async () => {
+                            const published = await productApi.publishRoute(graph.id);
+                            applyGraph(published, copy.mapPublished);
+                          }, copy.publishingMap);
+                        }}
+                      >
+                        {copy.publishMap}
+                      </button>
+                    ) : null}
+                    {graph.status === "PUBLISHED" ? (
+                      <button
+                        className="button button-danger-quiet"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => {
+                          if (!window.confirm(copy.confirmOutdated)) return;
+                          void runAction(async () => {
+                            const outdated = await productApi.markOutdated(graph.id);
+                            applyGraph(outdated, copy.mapOutdated);
+                          }, copy.updatingMap);
+                        }}
+                      >
+                        {copy.markOutdated}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             </section>
           </>
         ) : null}
       </main>
 
-      <footer>
-        <strong>PathMemory</strong> hỗ trợ ghi nhớ landmark và hướng tương đối. Sản phẩm không thay
-        thế gậy, chó dẫn đường hoặc kỹ năng định hướng và di chuyển.
-      </footer>
+      <footer className="footer">{copy.footer}</footer>
     </div>
   );
 }

@@ -24,7 +24,8 @@ function contrast(first: string, second: string): number {
 
 describe("PathMemory palette", () => {
   it.each([
-    ["primary button", colors.surface, colors.teal],
+    ["primary button", colors.surface, colors.blue],
+    ["accent label", colors.surface, colors.teal],
     ["main text", colors.navy, colors.canvas],
     ["muted text", colors.muted, colors.surface],
     ["safety text", colors.warningText, colors.warningSoft],
@@ -34,7 +35,7 @@ describe("PathMemory palette", () => {
     expect(contrast(foreground, background)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("keeps the focus accent strongly distinguishable from navy", () => {
-    expect(contrast(colors.focus, colors.navy)).toBeGreaterThanOrEqual(3);
+  it("keeps the focus accent distinguishable from a white control surface", () => {
+    expect(contrast(colors.focus, colors.surface)).toBeGreaterThanOrEqual(3);
   });
 });

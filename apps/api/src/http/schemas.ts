@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { landmarkStatuses, landmarkTypes, relativeManeuvers } from "../domain/types.js";
+import {
+  landmarkStatuses,
+  landmarkTypes,
+  productLocales,
+  relativeManeuvers,
+} from "../domain/types.js";
 
 export const uuidSchema = z.uuid();
 
@@ -54,7 +59,6 @@ export const replaceRouteEdgesRequestSchema = z
             fromLandmarkId: uuidSchema,
             toLandmarkId: uuidSchema,
             maneuver: z.enum(relativeManeuvers),
-            spokenCue: z.string().trim().min(1).max(300),
           })
           .strict(),
       )
@@ -66,6 +70,7 @@ export const observationMetadataSchema = z
   .object({
     clientRequestId: z.string().trim().min(1).max(100),
     capturedAt: z.iso.datetime({ offset: true }),
+    locale: z.enum(productLocales).default("vi-VN"),
   })
   .strict();
 
@@ -139,7 +144,6 @@ export const routeEdgeSchema = z
     fromLandmarkId: uuidSchema,
     toLandmarkId: uuidSchema,
     maneuver: z.enum(relativeManeuvers),
-    spokenCue: z.string().min(1).max(300),
   })
   .strict();
 
