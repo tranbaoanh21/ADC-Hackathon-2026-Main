@@ -22,8 +22,6 @@ FastAPI perception service
 Gemini
 ```
 
-- Bảo Anh: mobile, web, Express, Prisma/PostgreSQL, Product API và integration.
-- Hồng Phúc: FastAPI, Gemini/provider, prompt, preprocessing và AI eval.
 - Web/mobile chỉ gọi Express. FastAPI không sở hữu graph, database, BFS hoặc navigation narration.
 
 ## Chạy application local
